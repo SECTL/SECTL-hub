@@ -33,7 +33,7 @@
         @click="openPreview(image)"
       >
         <img 
-          :src="`./images/${image}`" 
+          :src="`/images/${image}`" 
           :alt="image" 
           loading="lazy" 
           @error="handleImageError($event)"
@@ -72,9 +72,27 @@ const formatImageName = (filename) => {
   return nameWithoutExt;
 };
 
-// 处理图片加载错误
+// 处理图片加载错误 - 改为显示错误占位符而非隐藏整个容器
 const handleImageError = (event) => {
-  event.target.parentElement.style.display = 'none';
+  const img = event.target;
+  img.style.display = 'none'; // 只隐藏失败的图片，而不是整个容器
+  
+  // 创建错误占位符
+  const errorPlaceholder = document.createElement('div');
+  errorPlaceholder.className = 'image-error-placeholder';
+  errorPlaceholder.innerHTML = '📷 加载失败';
+  errorPlaceholder.style.cssText = `
+    width: 100%;
+    aspect-ratio: 1;
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 0.8rem;
+  `;
+  
+  img.parentElement.insertBefore(errorPlaceholder, img);
 };
 
 // 自动获取图片列表
