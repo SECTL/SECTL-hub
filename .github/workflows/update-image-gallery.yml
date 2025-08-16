@@ -55,15 +55,20 @@ jobs:
 
     - name: Trigger Netlify Build
       if: steps.verify-changed-files.outputs.changed == 'true'
+      env:
+        NETLIFY_BUILD_HOOK_URL: ${{ secrets.NETLIFY_BUILD_HOOK_ID }}
       run: |
-        if [ -n "${{ secrets.NETLIFY_BUILD_HOOK_URL }}" ]; then
-          curl -X POST "${{ secrets.NETLIFY_BUILD_HOOK_URL }}" \
-            -H "Content-Type: application/json" \
-            -d '{"trigger_title": "GitHub Action - Image Gallery Update", "branch": "main"}' \
-            && echo "✅ Netlify构建触发成功" \
-            || echo "❌ Netlify构建触发失败，请检查NETLIFY_BUILD_HOOK_URL配置"
+        echo "正在触发Netlify构建..."
+        response=$(curl -s -w "%{http_code}" -X POST "$NETLIFY_BUILD_HOOK_URL" \
+          -H "Content-Type: application/json" \
+          -d '{"trigger_title": "GitHub Action - Image Gallery Update"}' \
+          -o /dev/null)
+        
+        if [ "$response" = "200" ] || [ "$response" = "201" ]; then
+          echo "✅ Netlify构建触发成功"
         else
-          echo "⚠️ 未配置NETLIFY_BUILD_HOOK_URL，跳过Netlify构建触发"
+          echo "❌ Netlify构建触发失败，HTTP状态码: $response"
+          echo "请检查NETLIFY_BUILD_HOOK_ID是否正确"
         fi
     
     - name: Comment on PR
