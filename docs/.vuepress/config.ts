@@ -14,7 +14,7 @@ export default defineUserConfig({
   
   // 主题配置
   theme: hopeTheme({
-    hostname: "https://SECTL-hub.netlify.app",
+    hostname: "https://sectl-hub.netlify.app",
     author: "SECTL",
     logo: "/logo.png",
     
