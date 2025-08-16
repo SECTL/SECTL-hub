@@ -56,10 +56,15 @@ jobs:
     - name: Trigger Netlify Build
       if: steps.verify-changed-files.outputs.changed == 'true'
       run: |
-        curl -X POST "https://api.netlify.com/build_hooks/${{ secrets.NETLIFY_BUILD_HOOK_ID }}" \
-          -H "Content-Type: application/json" \
-          -d '{"trigger_title": "GitHub Action - Image Gallery Update"}' \
-          || echo "Netlify构建触发失败，请检查NETLIFY_BUILD_HOOK_ID配置"
+        if [ -n "${{ secrets.NETLIFY_BUILD_HOOK_URL }}" ]; then
+          curl -X POST "${{ secrets.NETLIFY_BUILD_HOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"trigger_title": "GitHub Action - Image Gallery Update", "branch": "main"}' \
+            && echo "✅ Netlify构建触发成功" \
+            || echo "❌ Netlify构建触发失败，请检查NETLIFY_BUILD_HOOK_URL配置"
+        else
+          echo "⚠️ 未配置NETLIFY_BUILD_HOOK_URL，跳过Netlify构建触发"
+        fi
     
     - name: Comment on PR
       if: github.event_name == 'pull_request' && steps.verify-changed-files.outputs.changed == 'true'
