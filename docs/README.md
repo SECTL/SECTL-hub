@@ -7,8 +7,6 @@ heroFullScreen: false
 footer: 由 SECTL 交流群成员共同维护
 ---
 
-## 乐子展示
-
 <ImageGallery />
 
 <script setup>

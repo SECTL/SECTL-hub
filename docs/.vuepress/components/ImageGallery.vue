@@ -32,12 +32,23 @@
         :key="index" 
         class="gallery-item"
       >
-        <img 
-          :src="getImageUrl(image)" 
-          :alt="image" 
-          loading="lazy" 
-          @error="handleImageError($event, image)"
-        />
+        <div 
+          class="image-container"
+          :class="{ loaded: imageLoaded[image] }"
+        >
+          <img 
+            :src="getImageUrl(image)" 
+            :alt="image" 
+            loading="lazy" 
+            @load="handleImageLoad($event, image)"
+            @error="handleImageError($event, image)"
+          />
+          <!-- 图片加载占位符 -->
+          <div class="image-placeholder" v-if="!imageLoaded[image]">
+            <div class="placeholder-icon">📷</div>
+            <div class="placeholder-text">加载中...</div>
+          </div>
+        </div>
         <div class="image-name">{{ formatImageName(image) }}</div>
       </div>
     </div>
@@ -45,12 +56,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick, watch } from 'vue';
 
 // 状态变量
 const loading = ref(true);
 const images = ref([]);
 const failedImages = ref([]);
+const imageLoaded = ref({}); // 跟踪每张图片的加载状态
 
 // 格式化图片名称 - 移除扩展名和特殊字符
 const formatImageName = (filename) => {
@@ -66,10 +78,27 @@ const getImageUrl = (filename) => {
   return `/images/${filename}`;
 };
 
+// 简单的布局刷新函数 - 不再需要复杂计算
+const refreshLayout = () => {
+  nextTick(() => {
+    // 使用CSS Grid的auto-fit特性，项目高度由内容决定
+    // 无需手动计算，避免空白区域
+  });
+};
+
+// 处理图片加载完成
+const handleImageLoad = (event) => {
+  const img = event.target;
+  const imageName = img.alt;
+  imageLoaded.value[imageName] = true;
+  setTimeout(refreshLayout, 100);
+};
+
 // 处理图片加载错误
 const handleImageError = (event, imageName) => {
   console.error(`图片加载失败: ${imageName}`, event.target.src);
   failedImages.value.push(imageName);
+  imageLoaded.value[imageName] = true; // 标记为已加载（避免无限占位）
   
   const img = event.target;
   img.style.display = 'none';
@@ -117,12 +146,19 @@ const fetchImages = async () => {
     
     images.value = uniqueImages;
     
+    // 初始化所有图片的加载状态为false
+    imageLoaded.value = {};
+    images.value.forEach(img => {
+      imageLoaded.value[img] = false;
+    });
+    
     // 添加调试信息
     console.log('加载的图片列表:', uniqueImages);
     
   } catch (error) {
     console.error('获取图片列表失败:', error);
     images.value = [];
+    imageLoaded.value = {};
   } finally {
     loading.value = false;
   }
@@ -131,7 +167,20 @@ const fetchImages = async () => {
 // 组件挂载时获取图片
 onMounted(() => {
   fetchImages();
+  
+  // 监听窗口大小变化，简单刷新布局
+  window.addEventListener('resize', refreshLayout);
+  
+  // 初始刷新布局
+  setTimeout(refreshLayout, 500);
 });
+
+// 监听图片列表变化
+watch(images, () => {
+  nextTick(() => {
+    setTimeout(refreshLayout, 100);
+  });
+}, { deep: true });
 </script>
 
 <style scoped>
@@ -152,17 +201,19 @@ onMounted(() => {
 }
 
 .gallery-grid {
+  /* 使用CSS Grid的瀑布流布局，不需要grid-auto-rows */
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
   margin-bottom: 2rem;
   width: 100%;
+  align-items: start; /* 确保项目顶部对齐 */
 }
 
 .gallery-item {
   display: flex;
   flex-direction: column;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: transform 0.3s, box-shadow 0.3s;
@@ -171,6 +222,7 @@ onMounted(() => {
   border: 1px solid var(--vp-c-divider);
   width: 100%;
   max-width: 100%;
+  height: auto; /* 根据内容自动调整高度 */
 }
 
 .gallery-item:hover {
@@ -178,12 +230,65 @@ onMounted(() => {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
 }
 
+.gallery-item .image-container {
+  position: relative;
+  width: 100%;
+  height: 280px; /* 加载时的默认占位高度 */
+  background-color: var(--vp-c-bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: height 0.3s ease; /* 高度变化动画 */
+}
+
+.gallery-item .image-container.loaded {
+  height: auto; /* 图片加载后高度自适应 */
+  min-height: unset; /* 移除最小高度限制 */
+}
+
 .gallery-item img {
   width: 100%;
-  aspect-ratio: 1;
+  height: auto;
+  max-height: 350px;
   object-fit: cover;
+  border-radius: 8px;
   display: block;
-  max-width: 100%;
+  transition: opacity 0.3s ease;
+}
+
+.gallery-item img[src] {
+  opacity: 1;
+}
+
+.gallery-item img:not([src]) {
+  opacity: 0;
+}
+
+.image-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-2);
+  z-index: 1;
+}
+
+.placeholder-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.6;
+}
+
+.placeholder-text {
+  font-size: 0.875rem;
+  opacity: 0.5;
 }
 
 .image-name {
@@ -195,6 +300,7 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: var(--vp-c-bg);
 }
 
 /* 加载占位组件样式 */
@@ -229,8 +335,8 @@ onMounted(() => {
 
 .placeholder-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
   width: 100%;
 }
 
@@ -378,8 +484,8 @@ onMounted(() => {
 /* 占位组件移动端优化 */
 @media (max-width: 768px) {
   .placeholder-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
-    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
+    gap: 1rem;
   }
   
   .placeholder-title {
@@ -393,6 +499,19 @@ onMounted(() => {
   
   .empty-icon {
     font-size: 3rem;
+  }
+}
+
+/* 瀑布流响应式优化 */
+@media (max-width: 200px) {
+  .gallery-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .placeholder-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 </style>

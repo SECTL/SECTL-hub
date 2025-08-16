@@ -56,7 +56,7 @@ jobs:
     - name: Trigger Netlify Build
       if: steps.verify-changed-files.outputs.changed == 'true'
       env:
-        NETLIFY_BUILD_HOOK_URL: ${{ secrets.NETLIFY_BUILD_HOOK_ID }}
+        NETLIFY_BUILD_HOOK_URL: ${{ secrets.NETLIFY_BUILD_HOOK_ID }} }}
       run: |
         echo "正在触发Netlify构建..."
         response=$(curl -s -w "%{http_code}" -X POST "$NETLIFY_BUILD_HOOK_URL" \
