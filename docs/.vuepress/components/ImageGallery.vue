@@ -101,10 +101,7 @@ const fetchImages = async () => {
     // 回退到内置图片列表
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     const builtinImages = [
-      '不行！不行！.png',
-      '淦亖你啊.png',
-      '叫你搞.png',
-      '想谋权算位是不是？！.png'
+      '淦亖你啊.png'
     ];
     
     const validImages = builtinImages.filter(filename => {
