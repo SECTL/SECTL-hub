@@ -31,7 +31,6 @@
         v-for="(image, index) in images" 
         :key="index" 
         class="gallery-item"
-        @click="openPreview(image)"
       >
         <img 
           :src="getImageUrl(image)" 
@@ -40,18 +39,6 @@
           @error="handleImageError($event, image)"
         />
         <div class="image-name">{{ formatImageName(image) }}</div>
-      </div>
-    </div>
-
-    <!-- 图片预览模态框 -->
-    <div 
-      v-if="previewVisible" 
-      class="image-preview" 
-      @click="closePreview"
-    >
-      <div class="preview-content" @click.stop>
-        <img :src="previewSrc" alt="预览图片" />
-        <button class="close-btn" @click="closePreview">×</button>
       </div>
     </div>
   </div>
@@ -63,8 +50,6 @@ import { ref, onMounted } from 'vue';
 // 状态变量
 const loading = ref(true);
 const images = ref([]);
-const previewVisible = ref(false);
-const previewSrc = ref('');
 const failedImages = ref([]);
 
 // 格式化图片名称 - 移除扩展名和特殊字符
@@ -78,7 +63,7 @@ const formatImageName = (filename) => {
 // 获取图片URL - 使用正确的public路径
 const getImageUrl = (filename) => {
   // 使用相对于public目录的正确路径
-  return `/public/images/${filename}`;
+  return `/images/${filename}`;
 };
 
 // 处理图片加载错误
@@ -170,7 +155,7 @@ onMounted(() => {
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
   margin-bottom: 2rem;
   width: 100%;
@@ -246,7 +231,7 @@ onMounted(() => {
 
 .placeholder-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  grid-template-columns: repeat(5, 1fr);
   gap: 1rem;
   width: 100%;
 }
@@ -380,14 +365,14 @@ onMounted(() => {
 /* 宽屏优化 */
 @media (min-width: 1200px) {
   .gallery-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.5rem;
   }
 }
 
 @media (min-width: 1600px) {
   .gallery-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 2rem;
   }
 }
