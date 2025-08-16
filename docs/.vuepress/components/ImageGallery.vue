@@ -130,10 +130,13 @@ const fetchImages = async () => {
     // 回退到内置图片列表
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     const builtinImages = [
+      '（把藏狐绑起来）.png',
       '*东北粗口*.png',
       '*粤韵风华*_90.png',
       '*粤韵风华*.png',
+      '藏狐黑化ing.png',
       '淦亖你啊.png',
+      '你妈比的！.png',
       '拖出去斩了.png',
       '我不管.png'
     ];
