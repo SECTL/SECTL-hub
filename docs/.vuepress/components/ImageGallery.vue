@@ -75,10 +75,10 @@ const formatImageName = (filename) => {
   return nameWithoutExt;
 };
 
-// 获取图片URL - 处理特殊字符编码
+// 获取图片URL - 使用正确的public路径
 const getImageUrl = (filename) => {
-  // 使用encodeURIComponent处理中文和特殊字符
-  return `/images/${encodeURIComponent(filename)}`;
+  // 使用相对于public目录的正确路径
+  return `https://github.com/SECTL/SECTL-hub/blob/main/docs/public/images/${encodeURIComponent(filename)}`;
 };
 
 // 处理图片加载错误
