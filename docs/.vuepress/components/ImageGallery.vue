@@ -237,6 +237,7 @@ const fetchImages = async () => {
       '东北粗口.png',
       '淦亖你啊.png',
       '你妈比的！.png',
+      '入典.png',
       '拖出去斩了.png',
       '我不管.png',
       '粤韵风华.png'
