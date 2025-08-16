@@ -21,6 +21,10 @@ export default defineUserConfig({
     // 导航栏配置
     navbar: [
       { text: "乐子展示", link: "/" },
+      { text: "SECTL 交流群", link: "https://qm.qq.com/q/PCqYgev4Em" },
+      { text: "SECTL-hub 仓库", link: "https://github.com/SECTL/SECTL-hub" },
+      { text: "SecRandom 官网", link: "https://secrandom.netlify.app" },
+      { text: "SecRandom 项目仓库", link: "https://github.com/SECTL/SecRandom" }
     ],
     
     // 侧边栏配置
