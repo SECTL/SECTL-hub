@@ -102,7 +102,7 @@ const fetchImages = async () => {
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     const builtinImages = [
       '淦亖你啊.png',
-      '我不管_1.png'
+      '我不管.png'
     ];
     
     const validImages = builtinImages.filter(filename => {
