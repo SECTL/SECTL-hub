@@ -1,10 +1,11 @@
 import { defineClientConfig } from '@vuepress/client'
+import ImageGallery from './components/ImageGallery.vue'
+import VisitorCounter from './components/VisitorCounter.vue'
 
 export default defineClientConfig({
-  // 客户端配置
-  setup() {
-    return {
-      // 这里可以添加全局组件或配置
-    }
-  }
+  enhance({ app }) {
+    // 注册全局组件
+    app.component('ImageGallery', ImageGallery)
+    app.component('VisitorCounter', VisitorCounter)
+  },
 })

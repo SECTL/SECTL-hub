@@ -1,0 +1,65 @@
+name: Update Image Gallery
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'docs/images/**'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'docs/images/**'
+
+jobs:
+  update-gallery:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Update Image Gallery
+      run: |
+        echo "检测到图片目录变动，正在更新图片画廊..."
+        node scripts/update-image-gallery.js
+    
+    - name: Check for changes
+      id: verify-changed-files
+      run: |
+        if [[ -n "$(git status --porcelain)" ]]; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Commit changes
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add docs/.vuepress/components/ImageGallery.vue
+        git commit -m "🔄 自动更新图片画廊列表 [skip ci]"
+        git push
+    
+    - name: Comment on PR
+      if: github.event_name == 'pull_request' && steps.verify-changed-files.outputs.changed == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '📸 图片画廊已自动更新！\n\n检测到图片目录有变动，已自动更新 ImageGallery.vue 中的图片列表。'
+          })

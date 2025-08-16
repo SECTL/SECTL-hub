@@ -7,7 +7,7 @@ export default defineUserConfig({
   base: "/",
   lang: "zh-CN",
   title: "SECTL-hub",
-  description: "SECTL 交流群里面的乐子",
+  // description: "SECTL 交流群里面的乐子",
   
   // 打包工具配置
   bundler: viteBundler(),
@@ -26,14 +26,11 @@ export default defineUserConfig({
     // 侧边栏配置
     sidebar: false,
     
-    // 主题外观配置
-    darkmode: "toggle",
+    // 主题外观配置 - 支持跟随系统主题
+    darkmode: "auto",
     
     // 页面配置 - 移除所有页面信息展示
     pageInfo: false,
-    
-    // 博客配置 - 使用空对象禁用
-    blog: {},
     
     // 主题颜色配置 - 简化为布尔值
     themeColor: true,
@@ -44,13 +41,6 @@ export default defineUserConfig({
       photoSwipe: true,
     },
   }),
-  
-  // 插件配置 - 启用Vue组件支持
-  plugins: [
-    {
-      name: '@vuepress/plugin-vue-preview',
-    }
-  ],
   
   // 启用Markdown中的Vue组件
   markdown: {
