@@ -8,8 +8,7 @@ export default defineUserConfig({
   lang: "zh-CN",
   title: "SECTL-hub",
   head: [
-    ['link', { rel: 'icon', href: '/logo.png' }],
-    ['link', { rel: 'apple-touch-icon', href: '/logo.png' }]
+    ['link', { rel: 'icon', href: '/logo.png' }]
   ],
   
   // 打包工具配置
