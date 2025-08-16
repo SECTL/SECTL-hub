@@ -1,19 +1,19 @@
 <template>
   <div class="image-gallery">
     <!-- 加载占位组件 -->
-    <div v-if="loading" class="gallery-placeholder">
+    <div v-if="loading && images.length === 0" class="gallery-placeholder">
       <div class="placeholder-header">
         <div class="placeholder-shimmer"></div>
         <div class="placeholder-text">图片加载中...</div>
       </div>
-      <div class="placeholder-grid">
+      <div class="placeholder-masonry">
         <div 
-          v-for="i in 6" 
+          v-for="i in 8" 
           :key="i" 
           class="placeholder-item"
+          :style="{ height: getRandomHeight(200, 400) + 'px' }"
         >
           <div class="placeholder-image shimmer"></div>
-          <div class="placeholder-title shimmer"></div>
         </div>
       </div>
     </div>
@@ -25,109 +25,211 @@
       <div class="empty-description">请检查图片文件是否存在</div>
     </div>
     
-    <!-- 图片网格 -->
-    <div v-else class="gallery-grid">
+    <!-- 瀑布流容器 -->
+    <div v-else class="masonry-container" ref="masonryContainer">
       <div 
-        v-for="(image, index) in images" 
-        :key="index" 
-        class="gallery-item"
+        class="masonry-column"
+        v-for="(column, columnIndex) in columns"
+        :key="columnIndex"
       >
         <div 
-          class="image-container"
-          :class="{ loaded: imageLoaded[image] }"
+          v-for="(image, index) in column"
+          :key="image + '-' + index"
+          class="masonry-item"
+          :style="{ 
+            height: getImageHeight(image) + 'px',
+            animationDelay: (index * 0.1) + 's'
+          }"
         >
-          <img 
-            :src="getImageUrl(image)" 
-            :alt="image" 
-            loading="lazy" 
-            @load="handleImageLoad($event, image)"
-            @error="handleImageError($event, image)"
-          />
-          <!-- 图片加载占位符 -->
-          <div class="image-placeholder" v-if="!imageLoaded[image]">
-            <div class="placeholder-icon">📷</div>
-            <div class="placeholder-text">加载中...</div>
+          <div 
+            class="image-container"
+            :class="{ loaded: imageLoaded[image] }"
+          >
+            <img 
+              :src="getImageUrl(image)" 
+              :alt="image" 
+              loading="lazy" 
+              @load="handleImageLoad($event, image, columnIndex)"
+              @error="handleImageError($event, image)"
+            />
+            <!-- 图片加载占位符 -->
+            <div class="image-placeholder" v-if="!imageLoaded[image]">
+              <div class="placeholder-icon">📷</div>
+              <div class="placeholder-text">加载中...</div>
+            </div>
           </div>
+          <div class="image-name">{{ formatImageName(image) }}</div>
         </div>
-        <div class="image-name">{{ formatImageName(image) }}</div>
+      </div>
+      
+      <!-- 加载更多占位符 -->
+      <div v-if="loadingMore" class="loading-more">
+        <div class="loading-spinner"></div>
+        <span>正在加载更多...</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
 
 // 状态变量
 const loading = ref(true);
+const loadingMore = ref(false);
 const images = ref([]);
+const displayedImages = ref([]);
 const failedImages = ref([]);
-const imageLoaded = ref({}); // 跟踪每张图片的加载状态
+const imageLoaded = ref({});
+const loadedCount = ref(0);
+const columns = ref([]);
+const masonryContainer = ref(null);
 
-// 格式化图片名称 - 移除扩展名和特殊字符
+// 瀑布流配置
+const columnCount = ref(3);
+const columnHeights = ref([]);
+const batchSize = 12;
+const currentBatch = ref(0);
+const isLoading = ref(false);
+
+// 图片高度映射（模拟不同尺寸的图片）
+const imageHeights = ref({});
+
+// 格式化图片名称
 const formatImageName = (filename) => {
-  // 先解码URL编码，然后移除扩展名
   const decodedName = decodeURIComponent(filename);
   const nameWithoutExt = decodedName.split('.').slice(0, -1).join('.');
   return nameWithoutExt;
 };
 
-// 获取图片URL - 使用正确的public路径
+// 获取图片URL
 const getImageUrl = (filename) => {
-  // 使用相对于public目录的正确路径
-  return `/images/${filename}`;
+  return `/images/${encodeURIComponent(filename)}`;
 };
 
-// 简单的布局刷新函数 - 不再需要复杂计算
-const refreshLayout = () => {
+// 生成随机高度用于占位符
+const getRandomHeight = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+// 为每张图片分配高度
+const getImageHeight = (image) => {
+  if (!imageHeights.value[image]) {
+    // 根据图片名称生成伪随机高度（保持一致性）
+    const hash = image.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    const baseHeight = 250 + (Math.abs(hash) % 200);
+    imageHeights.value[image] = baseHeight;
+  }
+  return imageHeights.value[image];
+};
+
+// 计算响应式列数
+const calculateColumns = () => {
+  const width = window.innerWidth;
+  if (width >= 1400) return 5;
+  if (width >= 1200) return 4;
+  if (width >= 992) return 3;
+  if (width >= 768) return 2;
+  return 1;
+};
+
+// 重新分配图片到列
+const distributeImages = (imagesToDistribute) => {
+  const newColumns = Array.from({ length: columnCount.value }, () => []);
+  const newHeights = Array.from({ length: columnCount.value }, () => 0);
+  
+  imagesToDistribute.forEach(image => {
+    const shortestColumnIndex = newHeights.indexOf(Math.min(...newHeights));
+    newColumns[shortestColumnIndex].push(image);
+    newHeights[shortestColumnIndex] += getImageHeight(image) + 16; // 加上间距
+  });
+  
+  columnHeights.value = newHeights;
+  columns.value = newColumns;
+};
+
+// 加载下一批图片
+const loadMoreImages = async () => {
+  if (isLoading.value || currentBatch.value * batchSize >= images.value.length) return;
+  
+  isLoading.value = true;
+  loadingMore.value = true;
+  
+  const startIndex = currentBatch.value * batchSize;
+  const endIndex = Math.min(startIndex + batchSize, images.value.length);
+  const newImages = images.value.slice(startIndex, endIndex);
+  
+  // 延迟加载以展示加载动画
+  await new Promise(resolve => setTimeout(resolve, 800));
+  
+  displayedImages.value.push(...newImages);
+  distributeImages(displayedImages.value);
+  
+  currentBatch.value++;
+  isLoading.value = false;
+  loadingMore.value = false;
+};
+
+// 处理图片加载
+const handleImageLoad = (event, image, columnIndex) => {
+  imageLoaded.value[image] = true;
+  loadedCount.value++;
+  
+  // 调整列高度
+  const img = event.target;
+  const actualHeight = img.naturalHeight;
+  const aspectRatio = img.naturalWidth / actualHeight;
+  const containerWidth = masonryContainer.value?.offsetWidth / columnCount.value - 16;
+  const calculatedHeight = containerWidth / aspectRatio;
+  
+  // 更新实际高度
+  if (calculatedHeight > 0) {
+    imageHeights.value[image] = calculatedHeight + 60; // 加上标题高度
+  }
+  
   nextTick(() => {
-    // 使用CSS Grid的auto-fit特性，项目高度由内容决定
-    // 无需手动计算，避免空白区域
+    distributeImages(displayedImages.value);
   });
 };
 
-// 处理图片加载完成
-const handleImageLoad = (event) => {
-  const img = event.target;
-  const imageName = img.alt;
-  imageLoaded.value[imageName] = true;
-  setTimeout(refreshLayout, 100);
-};
-
 // 处理图片加载错误
-const handleImageError = (event, imageName) => {
-  console.error(`图片加载失败: ${imageName}`, event.target.src);
-  failedImages.value.push(imageName);
-  imageLoaded.value[imageName] = true; // 标记为已加载（避免无限占位）
-  
-  const img = event.target;
-  img.style.display = 'none';
-  
-  // 创建错误占位符
-  const errorPlaceholder = document.createElement('div');
-  errorPlaceholder.className = 'image-error-placeholder';
-  errorPlaceholder.innerHTML = '📷 加载失败';
-  errorPlaceholder.style.cssText = `
-    width: 100%;
-    aspect-ratio: 1;
-    background: #f5f5f5;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #999;
-    font-size: 0.8rem;
-    border-radius: 8px;
-  `;
-  
-  img.parentElement.insertBefore(errorPlaceholder, img);
+const handleImageError = (event, image) => {
+  console.error(`图片加载失败: ${image}`);
+  failedImages.value.push(image);
+  imageLoaded.value[image] = true;
+  loadedCount.value++;
 };
 
-// 自动获取图片列表
+// 滚动加载更多
+const handleScroll = () => {
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  const windowHeight = window.innerHeight;
+  const documentHeight = document.documentElement.scrollHeight;
+  
+  if (scrollTop + windowHeight >= documentHeight - 100) {
+    loadMoreImages();
+  }
+};
+
+// 响应式调整
+const handleResize = () => {
+  const newColumnCount = calculateColumns();
+  if (newColumnCount !== columnCount.value) {
+    columnCount.value = newColumnCount;
+    nextTick(() => {
+      distributeImages(displayedImages.value);
+    });
+  }
+};
+
+// 获取图片列表
 const fetchImages = async () => {
   loading.value = true;
   
-  try {    
-    // 回退到内置图片列表
+  try {
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     const builtinImages = [
       '（把藏狐绑起来）.png',
@@ -137,7 +239,6 @@ const fetchImages = async () => {
       '你妈比的！.png',
       '拖出去斩了.png',
       '我不管.png',
-      '粤韵风华_90.png',
       '粤韵风华.png'
     ];
     
@@ -146,132 +247,157 @@ const fetchImages = async () => {
       return extension && imageExtensions.includes(extension);
     });
     
-    // 按字母顺序排序并去重
     const uniqueImages = [...new Set(validImages)].sort((a, b) => 
       a.localeCompare(b, 'zh-CN', { sensitivity: 'base' })
     );
     
     images.value = uniqueImages;
     
-    // 初始化所有图片的加载状态为false
+    // 初始化加载状态
     imageLoaded.value = {};
     images.value.forEach(img => {
       imageLoaded.value[img] = false;
     });
     
-    // 添加调试信息
-    console.log('加载的图片列表:', uniqueImages);
+    loadedCount.value = 0;
+    
+    // 加载第一批图片
+    loadMoreImages();
     
   } catch (error) {
     console.error('获取图片列表失败:', error);
     images.value = [];
-    imageLoaded.value = {};
   } finally {
     loading.value = false;
   }
 };
 
-// 组件挂载时获取图片
+// 监听列数变化
+watch(columnCount, () => {
+  nextTick(() => {
+    distributeImages(displayedImages.value);
+  });
+});
+
+// 组件生命周期
 onMounted(() => {
   fetchImages();
   
-  // 监听窗口大小变化，简单刷新布局
-  window.addEventListener('resize', refreshLayout);
+  // 监听滚动和窗口变化
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener('resize', handleResize);
   
-  // 初始刷新布局
-  setTimeout(refreshLayout, 500);
+  // 初始计算列数
+  columnCount.value = calculateColumns();
 });
 
-// 监听图片列表变化
-watch(images, () => {
-  nextTick(() => {
-    setTimeout(refreshLayout, 100);
-  });
-}, { deep: true });
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('resize', handleResize);
+});
 </script>
 
 <style scoped>
+/* 主容器样式 */
 .image-gallery {
   width: 100%;
   max-width: 100%;
   margin: 0;
   padding: 1rem;
   box-sizing: border-box;
+  min-height: 100vh;
 }
 
-.gallery-loading,
-.gallery-empty {
-  text-align: center;
-  color: #888;
-  font-size: 1.2rem;
-  padding: 2rem 0;
-}
-
-.gallery-grid {
-  /* 使用CSS Grid的瀑布流布局，不需要grid-auto-rows */
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+/* 瀑布流容器 */
+.masonry-container {
   width: 100%;
-  align-items: start; /* 确保项目顶部对齐 */
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
 }
 
-.gallery-item {
-  display: flex;
-  flex-direction: column;
+.masonry-column {
+  display: inline-block;
+  vertical-align: top;
+  width: calc(100% / var(--columns, 3));
+  padding: 0 0.5rem;
+  box-sizing: border-box;
+}
+
+.masonry-item {
+  margin-bottom: 1rem;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-divider);
   width: 100%;
-  max-width: 100%;
-  height: auto; /* 根据内容自动调整高度 */
+  animation: fadeInUp 0.6s ease-out forwards;
+  opacity: 0;
+  transform: translateY(20px);
 }
 
-.gallery-item:hover {
+.masonry-item:hover {
   transform: translateY(-3px) scale(1.02);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
 }
 
-.gallery-item .image-container {
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 图片容器 */
+.image-container {
   position: relative;
   width: 100%;
-  height: 280px; /* 加载时的默认占位高度 */
   background-color: var(--vp-c-bg-soft);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: height 0.3s ease; /* 高度变化动画 */
+  margin: 0;
+  padding: 0;
 }
 
-.gallery-item .image-container.loaded {
-  height: auto; /* 图片加载后高度自适应 */
-  min-height: unset; /* 移除最小高度限制 */
-}
-
-.gallery-item img {
+.image-container img {
   width: 100%;
-  height: auto;
-  max-height: 350px;
+  height: 100%;
   object-fit: cover;
-  border-radius: 8px;
   display: block;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  margin: 0;
+  padding: 0;
 }
 
-.gallery-item img[src] {
+.image-container.loaded img {
   opacity: 1;
 }
 
-.gallery-item img:not([src]) {
+.image-container:not(.loaded) img {
   opacity: 0;
 }
 
+/* 图片名称 */
+.image-name {
+  padding: 0.75rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--vp-c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--vp-c-bg);
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* 加载占位符 */
 .image-placeholder {
   position: absolute;
   top: 0;
@@ -285,6 +411,7 @@ watch(images, () => {
   background-color: var(--vp-c-bg-soft);
   color: var(--vp-c-text-2);
   z-index: 1;
+  margin: 0;
 }
 
 .placeholder-icon {
@@ -298,21 +425,11 @@ watch(images, () => {
   opacity: 0.5;
 }
 
-.image-name {
-  padding: 0.75rem;
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--vp-c-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background: var(--vp-c-bg);
-}
-
-/* 加载占位组件样式 */
+/* 占位组件样式 */
 .gallery-placeholder {
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
   padding: 1rem;
   box-sizing: border-box;
 }
@@ -334,45 +451,31 @@ watch(images, () => {
   animation: shimmer 1.5s infinite;
 }
 
-.placeholder-text {
-  font-size: 1.2rem;
-  color: #666;
-  font-weight: 500;
-}
-
-.placeholder-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.5rem;
-  width: 100%;
+.placeholder-masonry {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .placeholder-item {
-  display: flex;
-  flex-direction: column;
+  flex: 1;
+  min-width: 250px;
   border-radius: 8px;
   overflow: hidden;
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-divider);
-  width: 100%;
+  position: relative;
 }
 
 .placeholder-image {
   width: 100%;
-  aspect-ratio: 1;
+  height: 100%;
   background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%);
   background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
-.placeholder-title {
-  height: 20px;
-  margin: 0.75rem;
-  border-radius: 4px;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-}
-
-/* 空状态占位组件样式 */
+/* 空状态样式 */
 .gallery-empty-placeholder {
   display: flex;
   flex-direction: column;
@@ -383,7 +486,8 @@ watch(images, () => {
   background: var(--vp-c-bg);
   border-radius: 12px;
   border: 2px dashed var(--vp-c-divider);
-  margin: 2rem 0;
+  margin: 2rem auto;
+  max-width: 500px;
 }
 
 .empty-icon {
@@ -406,7 +510,31 @@ watch(images, () => {
   line-height: 1.5;
 }
 
-/* 骨架屏动画 */
+/* 加载更多 */
+.loading-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 0.5rem;
+  color: var(--vp-c-text-2);
+  font-size: 1rem;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--vp-c-divider);
+  border-top: 2px solid var(--vp-c-brand);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -420,88 +548,50 @@ watch(images, () => {
   animation: shimmer 1.5s infinite;
 }
 
-/* 图片预览模态框 */
-.image-preview {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.9);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  backdrop-filter: blur(10px);
-  overflow: hidden;
-}
-
-.preview-content {
-  position: relative;
-  max-width: 95vw;
-  max-height: 95vh;
-}
-
-.preview-content img {
-  max-width: 95vw;
-  max-height: 95vh;
-  object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-.close-btn {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  color: white;
-  font-size: 1.5rem;
-  cursor: pointer;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  z-index: 1001;
-}
-
-.close-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* 宽屏优化 */
-@media (min-width: 1200px) {
-  .gallery-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1.5rem;
+/* 响应式设计 */
+@media (max-width: 1400px) {
+  .masonry-column {
+    width: calc(100% / 4);
   }
 }
 
-@media (min-width: 1600px) {
-  .gallery-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 2rem;
+@media (max-width: 1200px) {
+  .masonry-column {
+    width: calc(100% / 3);
   }
 }
 
-/* 占位组件移动端优化 */
-@media (max-width: 768px) {
-  .placeholder-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
-    gap: 1rem;
+@media (max-width: 992px) {
+  .masonry-column {
+    width: calc(100% / 2);
   }
   
-  .placeholder-title {
-    height: 16px;
-    margin: 0.5rem;
+  .placeholder-masonry {
+    flex-direction: column;
+  }
+  
+  .placeholder-item {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  .image-gallery {
+    padding: 0.5rem;
+  }
+  
+  .masonry-column {
+    width: 100%;
+    padding: 0 0.25rem;
+  }
+  
+  .masonry-item {
+    margin-bottom: 0.75rem;
   }
   
   .gallery-empty-placeholder {
     padding: 2rem 1rem;
+    margin: 1rem;
   }
   
   .empty-icon {
@@ -509,16 +599,32 @@ watch(images, () => {
   }
 }
 
-/* 瀑布流响应式优化 */
-@media (max-width: 200px) {
-  .gallery-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+@media (max-width: 480px) {
+  .image-name {
+    font-size: 0.8rem;
+    padding: 0.5rem;
   }
   
-  .placeholder-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .masonry-item {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* CSS变量支持 */
+:root {
+  --masonry-gap: 1rem;
+  --masonry-columns: 3;
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --masonry-columns: 4;
+  }
+}
+
+@media (min-width: 1400px) {
+  :root {
+    --masonry-columns: 5;
   }
 }
 </style>
