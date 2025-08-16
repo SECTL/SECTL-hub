@@ -276,6 +276,7 @@ const fetchImages = async () => {
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     const builtinImages = [
       '（把藏狐绑起来）.png',
+      '(拿出绳子,一把捆住藏狐).png',
       '藏狐黑化ing.png',
       '东北粗口.png',
       '淦亖你啊.png',
@@ -285,7 +286,9 @@ const fetchImages = async () => {
       '入典.png',
       '拖出去斩了.png',
       '我不管.png',
-      '粤韵风华.png'
+      '小小小小小藏狐.png',
+      '粤韵风华.png',
+      'Deepthinking.png'
     ];
     
     const validImages = builtinImages.filter(filename => {
