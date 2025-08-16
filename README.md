@@ -6,7 +6,7 @@ SECTL 交流群图片展示网站 - 基于 VuePress 和 Vue-Theme-Hope 框架搭
 
 ## 添加图片
 
-1. 将图片放入 `docs/public/images/` 文件夹
+1. 将图片放入 `docs/.vuepress/public/images/` 文件夹
 2. 支持 `.jpg`, `.png`, `.gif`, `.webp`, `.svg` 格式
 3. 图片会自动在网站中显示
 
@@ -20,7 +20,7 @@ SECTL 交流群图片展示网站 - 基于 VuePress 和 Vue-Theme-Hope 框架搭
 
 ## 功能特点
 
-- 🖼️ **自动图片展示**: 自动展示 `docs/public/images/` 文件夹中的所有图片
+- 🖼️ **自动图片展示**: 自动展示 `docs/.vuepress/public/images/` 文件夹中的所有图片
 - 📱 **响应式设计**: 适配手机、平板、桌面等各种设备
 - 🔍 **图片预览**: 点击图片可放大查看
 - 🤖 **自动化部署**: 支持 GitHub Actions 自动化部署
