@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@vuepress/bundler-vite": "^2.0.0-rc.24",
-    "undici": "^5.28.4",
+    "undici": "^5.26.5",
     "vuepress": "^2.0.0-rc.24"
   }
 }
