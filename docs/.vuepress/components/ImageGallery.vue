@@ -11,7 +11,7 @@
           v-for="i in 8" 
           :key="i" 
           class="placeholder-item"
-          :style="{ height: getRandomHeight(200, 400) + 'px' }"
+          :style="{ height: getRandomHeight(20, 800) + 'px' }"
         >
           <div class="placeholder-image shimmer"></div>
         </div>
@@ -406,7 +406,7 @@ onMounted(() => {
   margin: 0;
   padding: 1rem;
   box-sizing: border-box;
-  min-height: 100vh;
+  min-height: 50vh;
 }
 
 /* 瀑布流容器 */
