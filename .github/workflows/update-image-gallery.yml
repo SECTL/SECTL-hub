@@ -9,6 +9,7 @@ on:
     branches: [ main, master ]
     paths:
       - 'docs/.vuepress/public/images/**'
+  workflow_dispatch:
 
 jobs:
   update-gallery:
