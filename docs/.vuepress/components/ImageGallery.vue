@@ -41,6 +41,7 @@
             animationDelay: (index * 0.1) + 's'
           }"
         >
+          <div class="image-name">{{ formatImageName(image) }}</div>
           <div 
             class="image-container"
             :class="{ loaded: imageLoaded[image] }"
@@ -58,7 +59,6 @@
               <div class="placeholder-text">加载中...</div>
             </div>
           </div>
-          <div class="image-name">{{ formatImageName(image) }}</div>
         </div>
       </div>
       
@@ -518,7 +518,7 @@ onMounted(() => {
   word-break: break-word;
   overflow: visible;
   white-space: normal;
-  border-top: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
   transition: all 0.2s ease;
 }
 
