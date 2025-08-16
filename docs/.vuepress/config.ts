@@ -7,7 +7,6 @@ export default defineUserConfig({
   base: "/",
   lang: "zh-CN",
   title: "SECTL-hub",
-  description: "SECTL 交流群里面的乐子",
   
   // 网站图标配置
   head: [
