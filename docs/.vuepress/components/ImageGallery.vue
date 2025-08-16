@@ -101,7 +101,8 @@ const fetchImages = async () => {
     // 回退到内置图片列表
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     const builtinImages = [
-      '淦亖你啊.png'
+      '淦亖你啊.png',
+      '我不管_1.png'
     ];
     
     const validImages = builtinImages.filter(filename => {
