@@ -1,10 +1,7 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
@@ -45,18 +42,15 @@ jobs:
         npm run docs:build
     
     - name: Setup Pages
-      if: github.event_name == 'push'
       uses: actions/configure-pages@v4
       with:
         enablement: true
     
     - name: Upload artifact
-      if: github.event_name == 'push'
       uses: actions/upload-pages-artifact@v3
       with:
         path: docs/.vuepress/dist/
     
     - name: Deploy to GitHub Pages
-      if: github.event_name == 'push'
       id: deployment
       uses: actions/deploy-pages@v4
