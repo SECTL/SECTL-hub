@@ -33,8 +33,8 @@ export default defineUserConfig({
     // 侧边栏配置
     sidebar: false,
     
-    // 主题外观配置 - 支持跟随系统主题
-    darkmode: "auto",
+    // 主题外观配置 - 启用主题切换按钮
+    darkmode: "switch",
     
     // 页面配置 - 移除所有页面信息展示
     pageInfo: false,

@@ -21,7 +21,8 @@
     <!-- 空状态占位组件 -->
     <div v-else-if="images.length === 0" class="gallery-empty-placeholder">
       <div class="empty-icon">📷</div>
-      <div class="empty-title">正在加载图片中~</div>
+      <div class="empty-title">暂无图片</div>
+      <div class="empty-description">请检查图片文件是否存在</div>
     </div>
     
     <!-- 图片网格 -->
@@ -33,10 +34,10 @@
         @click="openPreview(image)"
       >
         <img 
-          :src="`/images/${image}`" 
+          :src="getImageUrl(image)" 
           :alt="image" 
           loading="lazy" 
-          @error="handleImageError($event)"
+          @error="handleImageError($event, image)"
         />
         <div class="image-name">{{ formatImageName(image) }}</div>
       </div>
@@ -64,18 +65,27 @@ const loading = ref(true);
 const images = ref([]);
 const previewVisible = ref(false);
 const previewSrc = ref('');
+const failedImages = ref([]);
 
 // 格式化图片名称 - 移除扩展名和特殊字符
 const formatImageName = (filename) => {
-  // 移除扩展名
   const nameWithoutExt = filename.split('.').slice(0, -1).join('.');
-  return nameWithoutExt;
+  return decodeURIComponent(nameWithoutExt);
 };
 
-// 处理图片加载错误 - 改为显示错误占位符而非隐藏整个容器
-const handleImageError = (event) => {
+// 获取图片URL - 处理特殊字符编码
+const getImageUrl = (filename) => {
+  // 使用encodeURIComponent处理中文和特殊字符
+  return `/images/${encodeURIComponent(filename)}`;
+};
+
+// 处理图片加载错误
+const handleImageError = (event, imageName) => {
+  console.error(`图片加载失败: ${imageName}`, event.target.src);
+  failedImages.value.push(imageName);
+  
   const img = event.target;
-  img.style.display = 'none'; // 只隐藏失败的图片，而不是整个容器
+  img.style.display = 'none';
   
   // 创建错误占位符
   const errorPlaceholder = document.createElement('div');
@@ -90,6 +100,7 @@ const handleImageError = (event) => {
     justify-content: center;
     color: #999;
     font-size: 0.8rem;
+    border-radius: 8px;
   `;
   
   img.parentElement.insertBefore(errorPlaceholder, img);
@@ -121,6 +132,9 @@ const fetchImages = async () => {
     
     images.value = uniqueImages;
     
+    // 添加调试信息
+    console.log('加载的图片列表:', uniqueImages);
+    
   } catch (error) {
     console.error('获取图片列表失败:', error);
     images.value = [];
@@ -137,12 +151,11 @@ onMounted(() => {
 
 <style scoped>
 .image-gallery {
-  width: 150%;
+  width: 100%;
   max-width: 100%;
   margin: 0;
   padding: 1rem;
   box-sizing: border-box;
-  overflow-x: hidden;
 }
 
 .gallery-loading,
@@ -395,58 +408,6 @@ onMounted(() => {
   
   .empty-icon {
     font-size: 3rem;
-  }
-  
-  .empty-title {
-    font-size: 1.2rem;
-  }
-  
-  .empty-description {
-    font-size: 0.9rem;
-  }
-}
-
-/* 移动端优化 */
-@media (max-width: 768px) {
-  .image-gallery {
-    padding: 0.5rem;
-  }
-  
-  .gallery-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
-    gap: 0.5rem;
-  }
-  
-  .gallery-item:hover {
-    transform: none;
-  }
-  
-  .image-name {
-    padding: 0.5rem;
-    font-size: 0.8rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .gallery-grid {
-    grid-template-columns: repeat(auto-fill, minmax(min(120px, 100%), 1fr));
-    gap: 0.25rem;
-  }
-}
-
-/* 主题变量支持 */
-:root {
-  --vp-c-bg: #ffffff;
-  --vp-c-text: #213547;
-  --vp-c-divider: #e2e8f0;
-}
-
-/* 深色主题 */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --vp-c-bg: #1a1a1a;
-    --vp-c-text: #ffffff;
-    --vp-c-divider: #333333;
   }
 }
 </style>
