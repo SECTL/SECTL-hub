@@ -1,0 +1,4 @@
+User-agent:*
+Disallow:
+
+Sitemap: https://sectl-hub.netlify.app/sitemap.xml
