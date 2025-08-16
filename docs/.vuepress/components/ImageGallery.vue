@@ -132,6 +132,7 @@ const fetchImages = async () => {
     const builtinImages = [
       '*东北粗口*.png',
       '淦亖你啊.png',
+      '拖出去斩了.png',
       '我不管.png'
     ];
     
