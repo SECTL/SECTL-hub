@@ -7,7 +7,25 @@ export default defineUserConfig({
   base: "/",
   lang: "zh-CN",
   title: "SECTL-hub",
-  // description: "SECTL 交流群里面的乐子",
+  description: "SECTL 交流群里面的乐子",
+  
+  // 网站图标配置
+  head: [
+    [
+      'link',
+      {
+        rel: 'icon',
+        href: '/logo.png'
+      }
+    ],
+    [
+      'link',
+      {
+        rel: 'apple-touch-icon',
+        href: '/logo.png'
+      }
+    ]
+  ],
   
   // 打包工具配置
   bundler: viteBundler(),

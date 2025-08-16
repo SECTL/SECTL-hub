@@ -1,1 +1,1 @@
-export const siteData = JSON.parse("{\"base\":\"/\",\"lang\":\"zh-CN\",\"title\":\"SECTL-hub\",\"description\":\"\",\"head\":[],\"locales\":{}}")
+export const siteData = JSON.parse("{\"base\":\"/\",\"lang\":\"zh-CN\",\"title\":\"SECTL-hub\",\"description\":\"SECTL 交流群里面的乐子\",\"head\":[[\"link\",{\"rel\":\"icon\",\"href\":\"/logo.png\"}],[\"link\",{\"rel\":\"apple-touch-icon\",\"href\":\"/logo.png\"}]],\"locales\":{}}")
