@@ -131,32 +131,38 @@ const getImageHeight = (image) => {
     
     // 添加标题区域和间距，无高度限制
     const titleHeight = 50;
-    const gap = getCSSVariable('--masonry-gap') * 16;
+    const gap = getGapValue();
     imageHeights.value[image] = Math.round(estimatedHeight) + titleHeight + gap;
   }
   return imageHeights.value[image];
 };
 
-// 计算响应式列数
+// 计算响应式列数 - 优化全设备适配
 const calculateColumns = () => {
   const width = window.innerWidth;
-  if (width >= 1400) return 5;
+  
+  // 超宽屏支持
+  if (width >= 1921) return 6;
+  if (width >= 1600) return 5;
   if (width >= 1200) return 4;
-  if (width >= 992) return 3;
+  if (width >= 1024) return 3;
   if (width >= 768) return 2;
-  return 1;
+  if (width >= 640) return 1; // 手机大屏
+  if (width >= 480) return 1; // 手机标准
+  return 1; // 超小屏
 };
 
-// 获取CSS变量值
-const getCSSVariable = (variableName) => {
-  const root = document.documentElement;
-  const value = getComputedStyle(root).getPropertyValue(variableName);
-  return parseInt(value) || 3; // 默认3列
+// 获取间距值 - 简化为固定值，避免CSS变量依赖
+const getGapValue = () => {
+  const width = window.innerWidth;
+  if (width >= 768) return 16; // 桌面端
+  if (width >= 480) return 12; // 平板端
+  return 8; // 手机端
 };
 
-// 重新分配图片到列
+// 重新分配图片到列 - 使用动态计算的列数
 const distributeImages = (imagesToDistribute) => {
-  const currentColumnCount = getCSSVariable('--masonry-columns');
+  const currentColumnCount = calculateColumns(); // 直接使用JavaScript计算的列数
   const newColumns = Array.from({ length: currentColumnCount }, () => []);
   const newHeights = Array.from({ length: currentColumnCount }, () => 0);
   
@@ -177,7 +183,7 @@ const distributeImages = (imagesToDistribute) => {
     
     // 使用实际计算的高度进行布局
     const imageHeight = imageHeights.value[image] || getImageHeight(image);
-    const gap = getCSSVariable('--masonry-gap') * 16; // 转换为px
+    const gap = getGapValue(); // 使用动态间距
     newHeights[shortestColumnIndex] += imageHeight + gap;
   });
   
@@ -228,7 +234,7 @@ const handleImageLoad = (event, image, columnIndex) => {
     
     // 计算完整高度（包含标题和间距）
     const titleHeight = 50;
-    const gap = getCSSVariable('--masonry-gap') * 16;
+    const gap = getGapValue();
     const totalHeight = Math.round(calculatedHeight) + titleHeight + gap;
     
     // 更新为基于真实宽高比的高度
@@ -554,7 +560,7 @@ onMounted(() => {
   width: 100%;
   max-width: 3000px;
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem 50px; /* 减小左右间距到50px */
   box-sizing: border-box;
 }
 
@@ -672,78 +678,267 @@ onMounted(() => {
   animation: shimmer 1.5s infinite;
 }
 
-/* 响应式设计 */
-@media (max-width: 1400px) {
+/* 响应式设计 - 全面优化移动端体验 */
+
+/* 超宽屏 (4K+) */
+@media (min-width: 1921px) {
+  :root {
+    --masonry-columns: 6;
+    --masonry-gap: 1.5rem;
+  }
+  
+  .masonry-container {
+    max-width: 1800px;
+  }
+}
+
+/* 桌面端大屏 */
+@media (max-width: 1920px) {
+  :root {
+    --masonry-columns: 5;
+  }
+}
+
+@media (max-width: 1600px) {
   :root {
     --masonry-columns: 4;
   }
 }
 
+/* 桌面端标准 */
 @media (max-width: 1200px) {
   :root {
     --masonry-columns: 3;
+    --masonry-gap: 1rem;
   }
 }
 
-@media (max-width: 992px) {
+/* 平板端横屏 */
+@media (max-width: 1024px) {
+  :root {
+    --masonry-columns: 3;
+    --masonry-gap: 0.875rem;
+  }
+  
+  .image-gallery {
+    padding: 0.75rem;
+  }
+}
+
+/* 平板端竖屏 */
+@media (max-width: 768px) {
   :root {
     --masonry-columns: 2;
     --masonry-gap: 0.75rem;
-  }
-  
-  .placeholder-masonry {
-    flex-direction: column;
-  }
-  
-  .placeholder-item {
-    min-width: auto;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --masonry-columns: 1;
-    --masonry-gap: 0.5rem;
   }
   
   .image-gallery {
     padding: 0.5rem;
   }
   
-  .masonry-column {
-    width: 100%;
-    padding: 0;
+  .masonry-container {
+    gap: var(--masonry-gap, 0.75rem);
   }
   
   .masonry-item {
-    margin-bottom: var(--masonry-gap, 0.5rem);
+    margin-bottom: var(--masonry-gap, 0.75rem);
+    border-radius: 10px;
+  }
+  
+  .image-name {
+    font-size: 0.9rem;
+    padding: 0.7rem;
+    min-height: 2.7em;
+  }
+  
+  .gallery-empty-placeholder {
+    padding: 2.5rem 1.5rem;
+    margin: 1.5rem;
+  }
+  
+  .empty-icon {
+    font-size: 3.5rem;
+  }
+  
+  .empty-title {
+    font-size: 1.3rem;
+  }
+}
+
+/* 手机端大屏 */
+@media (max-width: 640px) {
+  :root {
+    --masonry-columns: 1;
+    --masonry-gap: 0.625rem;
+  }
+  
+  .image-gallery {
+    padding: 0.375rem;
+  }
+  
+  .masonry-container {
+    gap: var(--masonry-gap, 0.625rem);
+  }
+  
+  .masonry-item {
+    margin-bottom: var(--masonry-gap, 0.625rem);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+  
+  .masonry-item:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+  
+  .image-name {
+    font-size: 0.875rem;
+    padding: 0.625rem;
+    line-height: 1.4;
+    min-height: 2.5em;
   }
   
   .gallery-empty-placeholder {
     padding: 2rem 1rem;
-    margin: 1rem;
+    margin: 1rem 0.5rem;
   }
   
   .empty-icon {
     font-size: 3rem;
   }
+  
+  .empty-title {
+    font-size: 1.2rem;
+  }
 }
 
+/* 手机端标准 */
 @media (max-width: 480px) {
   :root {
+    --masonry-columns: 1;
     --masonry-gap: 0.5rem;
   }
   
-  .image-name {
-    font-size: 0.85rem;
-    padding: 0.6rem;
-    line-height: 1.3;
-    min-height: 2.6em;
+  .image-gallery {
+    padding: 0.25rem;
+  }
+  
+  .masonry-container {
+    gap: var(--masonry-gap, 0.5rem);
   }
   
   .masonry-item {
     margin-bottom: var(--masonry-gap, 0.5rem);
+    border-radius: 6px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
   }
+  
+  .masonry-item:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .image-name {
+    font-size: 0.8125rem;
+    padding: 0.5rem;
+    line-height: 1.35;
+    min-height: 2.4em;
+  }
+  
+  .gallery-empty-placeholder {
+    padding: 1.5rem 1rem;
+    margin: 0.5rem;
+  }
+  
+  .empty-icon {
+    font-size: 2.5rem;
+  }
+  
+  .empty-title {
+    font-size: 1.1rem;
+  }
+  
+  .empty-description {
+    font-size: 0.9rem;
+  }
+}
+
+/* 超小屏手机 */
+@media (max-width: 375px) {
+  :root {
+    --masonry-gap: 0.375rem;
+  }
+  
+  .image-gallery {
+    padding: 0.125rem;
+  }
+  
+  .masonry-container {
+    gap: var(--masonry-gap, 0.375rem);
+  }
+  
+  .masonry-item {
+    margin-bottom: var(--masonry-gap, 0.375rem);
+    border-radius: 4px;
+  }
+  
+  .image-name {
+    font-size: 0.75rem;
+    padding: 0.5rem 0.375rem;
+    min-height: 2.2em;
+  }
+}
+
+/* 横屏模式优化 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .image-gallery {
+    padding: 0.5rem;
+  }
+  
+  .masonry-item {
+    border-radius: 6px;
+  }
+  
+  .image-name {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+  .masonry-item:hover {
+    transform: none;
+    box-shadow: var(--masonry-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
+  }
+  
+  .masonry-item:active {
+    transform: scale(0.98);
+    transition: transform 0.1s ease;
+  }
+}
+
+/* 防止移动端缩放 */
+@media (max-width: 768px) {
+  .masonry-item {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
+/* 滚动性能优化 */
+.masonry-container {
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
+}
+
+.masonry-item {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 /* CSS变量支持 */
