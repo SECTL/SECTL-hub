@@ -1,16 +1,3 @@
 import comp from "D:/Github/SECTL/SECTL-hub/docs/.vuepress/.temp/pages/index.html.vue"
-const data = JSON.parse("{\"path\":\"/\",\"title\":\"SECTL-hub\",\"lang\":\"zh-CN\",\"frontmatter\":{\"home\":true,\"icon\":\"home\",\"title\":\"SECTL-hub\",\"heroFullScreen\":false,\"footer\":\"由 SECTL 交流群成员共同维护\",\"description\":\"乐子展示\",\"head\":[[\"script\",{\"type\":\"application/ld+json\"},\"{\\\"@context\\\":\\\"https://schema.org\\\",\\\"@type\\\":\\\"WebPage\\\",\\\"name\\\":\\\"SECTL-hub\\\",\\\"description\\\":\\\"乐子展示\\\"}\"],[\"meta\",{\"property\":\"og:url\",\"content\":\"https://sectl-hub.netlify.app/\"}],[\"meta\",{\"property\":\"og:site_name\",\"content\":\"SECTL-hub\"}],[\"meta\",{\"property\":\"og:title\",\"content\":\"SECTL-hub\"}],[\"meta\",{\"property\":\"og:description\",\"content\":\"乐子展示\"}],[\"meta\",{\"property\":\"og:type\",\"content\":\"website\"}],[\"meta\",{\"property\":\"og:locale\",\"content\":\"zh-CN\"}]]},\"readingTime\":{\"minutes\":0.17,\"words\":51},\"filePathRelative\":\"README.md\",\"autoDesc\":true}")
+const data = JSON.parse("{\"path\":\"/\",\"title\":\"SECTL-hub\",\"lang\":\"zh-CN\",\"frontmatter\":{\"home\":true,\"icon\":\"home\",\"title\":\"SECTL-hub\",\"heroFullScreen\":false,\"footer\":\"由 SECTL 交流群成员共同维护\",\"description\":\"乐子展示\",\"head\":[[\"script\",{\"type\":\"application/ld+json\"},\"{\\\"@context\\\":\\\"https://schema.org\\\",\\\"@type\\\":\\\"WebPage\\\",\\\"name\\\":\\\"SECTL-hub\\\",\\\"description\\\":\\\"乐子展示\\\"}\"],[\"meta\",{\"property\":\"og:url\",\"content\":\"https://sectl-hub.netlify.app/\"}],[\"meta\",{\"property\":\"og:site_name\",\"content\":\"SECTL-hub\"}],[\"meta\",{\"property\":\"og:title\",\"content\":\"SECTL-hub\"}],[\"meta\",{\"property\":\"og:description\",\"content\":\"乐子展示\"}],[\"meta\",{\"property\":\"og:type\",\"content\":\"website\"}],[\"meta\",{\"property\":\"og:locale\",\"content\":\"zh-CN\"}],[\"meta\",{\"property\":\"og:updated_time\",\"content\":\"2025-08-16T07:11:37.000Z\"}],[\"meta\",{\"property\":\"article:modified_time\",\"content\":\"2025-08-16T07:11:37.000Z\"}]]},\"git\":{\"createdTime\":1755274442000,\"updatedTime\":1755328297000,\"contributors\":[{\"name\":\"黎泽懿\",\"username\":\"\",\"email\":\"lzy.12@foxmail.com\",\"commits\":3}]},\"readingTime\":{\"minutes\":0.16,\"words\":49},\"filePathRelative\":\"README.md\",\"autoDesc\":true}")
 export { comp, data }
-
-if (import.meta.webpackHot) {
-  import.meta.webpackHot.accept()
-  if (__VUE_HMR_RUNTIME__.updatePageData) {
-    __VUE_HMR_RUNTIME__.updatePageData(data)
-  }
-}
-
-if (import.meta.hot) {
-  import.meta.hot.accept(({ data }) => {
-    __VUE_HMR_RUNTIME__.updatePageData(data)
-  })
-}
