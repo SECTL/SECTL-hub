@@ -69,8 +69,10 @@ const failedImages = ref([]);
 
 // 格式化图片名称 - 移除扩展名和特殊字符
 const formatImageName = (filename) => {
-  const nameWithoutExt = filename.split('.').slice(0, -1).join('.');
-  return decodeURIComponent(nameWithoutExt);
+  // 先解码URL编码，然后移除扩展名
+  const decodedName = decodeURIComponent(filename);
+  const nameWithoutExt = decodedName.split('.').slice(0, -1).join('.');
+  return nameWithoutExt;
 };
 
 // 获取图片URL - 处理特殊字符编码
