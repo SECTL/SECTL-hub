@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const IMAGES_DIR = path.join(__dirname, '..', 'docs', 'images');
+const IMAGES_DIR = path.join(__dirname, '..', 'docs', '.vuepress', 'public', 'images');
 const IMAGE_GALLERY_PATH = path.join(__dirname, '..', 'docs', '.vuepress', 'components', 'ImageGallery.vue');
 
 function getImageFiles() {
