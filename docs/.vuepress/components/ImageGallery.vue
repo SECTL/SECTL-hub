@@ -1,7 +1,30 @@
 <template>
   <div class="image-gallery">
-    <div v-if="loading" class="gallery-loading">加载中...</div>
-    <div v-else-if="images.length === 0" class="gallery-empty">没有图片</div>
+    <!-- 加载占位组件 -->
+    <div v-if="loading" class="gallery-placeholder">
+      <div class="placeholder-header">
+        <div class="placeholder-shimmer"></div>
+        <div class="placeholder-text">图片加载中...</div>
+      </div>
+      <div class="placeholder-grid">
+        <div 
+          v-for="i in 6" 
+          :key="i" 
+          class="placeholder-item"
+        >
+          <div class="placeholder-image shimmer"></div>
+          <div class="placeholder-title shimmer"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 空状态占位组件 -->
+    <div v-else-if="images.length === 0" class="gallery-empty-placeholder">
+      <div class="empty-icon">📷</div>
+      <div class="empty-title">正在加载图片中~</div>
+    </div>
+    
+    <!-- 图片网格 -->
     <div v-else class="gallery-grid">
       <div 
         v-for="(image, index) in images" 
@@ -58,22 +81,7 @@ const handleImageError = (event) => {
 const fetchImages = async () => {
   loading.value = true;
   
-  try {
-    // 尝试从自动生成的图片列表中读取
-    try {
-      const response = await fetch('/imageList.json');
-      if (response.ok) {
-        const imageList = await response.json();
-        images.value = imageList;
-        if (imageList.length === 0) {
-          console.warn('图片列表为空');
-        }
-        return;
-      }
-    } catch (e) {
-      console.log('无法读取自动生成的图片列表，使用内置列表');
-    }
-    
+  try {    
     // 回退到内置图片列表
     const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'];
     const builtinImages = [
@@ -173,6 +181,116 @@ onMounted(() => {
   text-overflow: ellipsis;
 }
 
+/* 加载占位组件样式 */
+.gallery-placeholder {
+  width: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.placeholder-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.placeholder-shimmer {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.placeholder-text {
+  font-size: 1.2rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.placeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.placeholder-item {
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--vp-c-bg);
+  border: 1px solid var(--vp-c-divider);
+  width: 100%;
+}
+
+.placeholder-image {
+  width: 100%;
+  aspect-ratio: 1;
+  background: linear-gradient(90deg, #f5f5f5 25%, #e8e8e8 50%, #f5f5f5 75%);
+  background-size: 200% 100%;
+}
+
+.placeholder-title {
+  height: 20px;
+  margin: 0.75rem;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+}
+
+/* 空状态占位组件样式 */
+.gallery-empty-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  background: var(--vp-c-bg);
+  border-radius: 12px;
+  border: 2px dashed var(--vp-c-divider);
+  margin: 2rem 0;
+}
+
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--vp-c-text);
+  margin-bottom: 0.5rem;
+}
+
+.empty-description {
+  font-size: 1rem;
+  color: #888;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+/* 骨架屏动画 */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
 /* 图片预览模态框 */
 .image-preview {
   position: fixed;
@@ -238,6 +356,35 @@ onMounted(() => {
   .gallery-grid {
     grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
     gap: 2rem;
+  }
+}
+
+/* 占位组件移动端优化 */
+@media (max-width: 768px) {
+  .placeholder-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr));
+    gap: 0.5rem;
+  }
+  
+  .placeholder-title {
+    height: 16px;
+    margin: 0.5rem;
+  }
+  
+  .gallery-empty-placeholder {
+    padding: 2rem 1rem;
+  }
+  
+  .empty-icon {
+    font-size: 3rem;
+  }
+  
+  .empty-title {
+    font-size: 1.2rem;
+  }
+  
+  .empty-description {
+    font-size: 0.9rem;
   }
 }
 

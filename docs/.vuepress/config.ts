@@ -7,23 +7,9 @@ export default defineUserConfig({
   base: "/",
   lang: "zh-CN",
   title: "SECTL-hub",
-  
-  // 网站图标配置
   head: [
-    [
-      'link',
-      {
-        rel: 'icon',
-        href: '/logo.png'
-      }
-    ],
-    [
-      'link',
-      {
-        rel: 'apple-touch-icon',
-        href: '/logo.png'
-      }
-    ]
+    ['link', { rel: 'icon', href: '/logo.png' }],
+    ['link', { rel: 'apple-touch-icon', href: '/logo.png' }]
   ],
   
   // 打包工具配置
@@ -33,7 +19,7 @@ export default defineUserConfig({
   theme: hopeTheme({
     hostname: "https://sectl-hub.netlify.app",
     author: "SECTL",
-    logo: "/logo.png",
+    logo: '/logo.png',
     
     // 导航栏配置
     navbar: [
