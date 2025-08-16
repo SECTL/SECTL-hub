@@ -52,6 +52,14 @@ jobs:
         git add docs/.vuepress/components/ImageGallery.vue
         git commit -m "🔄 自动更新图片画廊列表 [skip ci]"
         git push
+
+    - name: Trigger Netlify Build
+      if: steps.verify-changed-files.outputs.changed == 'true'
+      run: |
+        curl -X POST "https://api.netlify.com/build_hooks/${{ secrets.NETLIFY_BUILD_HOOK_ID }}" \
+          -H "Content-Type: application/json" \
+          -d '{"trigger_title": "GitHub Action - Image Gallery Update"}' \
+          || echo "Netlify构建触发失败，请检查NETLIFY_BUILD_HOOK_ID配置"
     
     - name: Comment on PR
       if: github.event_name == 'pull_request' && steps.verify-changed-files.outputs.changed == 'true'
