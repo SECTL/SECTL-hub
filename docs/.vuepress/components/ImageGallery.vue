@@ -95,6 +95,9 @@ const isLoading = ref(false);
 // 图片高度映射（模拟不同尺寸的图片）
 const imageHeights = ref({});
 
+// 图片真实宽高比映射
+const imageAspectRatios = ref({});
+
 // 格式化图片名称
 const formatImageName = (filename) => {
   const decodedName = decodeURIComponent(filename);
@@ -112,16 +115,24 @@ const getRandomHeight = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-// 为每张图片分配高度
+// 为每张图片分配高度 - 完全基于真实宽高比，无限制
 const getImageHeight = (image) => {
   if (!imageHeights.value[image]) {
-    // 根据图片名称生成伪随机高度（保持一致性）
-    const hash = image.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
-      return a & a;
-    }, 0);
-    const baseHeight = 250 + (Math.abs(hash) % 200);
-    imageHeights.value[image] = baseHeight;
+    let aspectRatio = 4 / 3; // 默认宽高比
+    
+    // 如果已存储真实宽高比，则使用它
+    if (imageAspectRatios.value[image]) {
+      aspectRatio = imageAspectRatios.value[image];
+    }
+    
+    // 计算当前容器宽度
+    const containerWidth = (masonryContainer.value?.offsetWidth || 3000) / Math.max(columnCount.value, 1) - 32;
+    const estimatedHeight = containerWidth / aspectRatio;
+    
+    // 添加标题区域和间距，无高度限制
+    const titleHeight = 50;
+    const gap = getCSSVariable('--masonry-gap') * 16;
+    imageHeights.value[image] = Math.round(estimatedHeight) + titleHeight + gap;
   }
   return imageHeights.value[image];
 };
@@ -136,19 +147,43 @@ const calculateColumns = () => {
   return 1;
 };
 
+// 获取CSS变量值
+const getCSSVariable = (variableName) => {
+  const root = document.documentElement;
+  const value = getComputedStyle(root).getPropertyValue(variableName);
+  return parseInt(value) || 3; // 默认3列
+};
+
 // 重新分配图片到列
 const distributeImages = (imagesToDistribute) => {
-  const newColumns = Array.from({ length: columnCount.value }, () => []);
-  const newHeights = Array.from({ length: columnCount.value }, () => 0);
+  const currentColumnCount = getCSSVariable('--masonry-columns');
+  const newColumns = Array.from({ length: currentColumnCount }, () => []);
+  const newHeights = Array.from({ length: currentColumnCount }, () => 0);
   
   imagesToDistribute.forEach(image => {
-    const shortestColumnIndex = newHeights.indexOf(Math.min(...newHeights));
+    // 智能选择最短列，确保图片自动填补空白
+    let shortestColumnIndex = 0;
+    let minHeight = newHeights[0];
+    
+    // 精确找到最短列
+    for (let i = 1; i < newHeights.length; i++) {
+      if (newHeights[i] < minHeight) {
+        minHeight = newHeights[i];
+        shortestColumnIndex = i;
+      }
+    }
+    
     newColumns[shortestColumnIndex].push(image);
-    newHeights[shortestColumnIndex] += getImageHeight(image) + 16; // 加上间距
+    
+    // 使用实际计算的高度进行布局
+    const imageHeight = imageHeights.value[image] || getImageHeight(image);
+    const gap = getCSSVariable('--masonry-gap') * 16; // 转换为px
+    newHeights[shortestColumnIndex] += imageHeight + gap;
   });
   
   columnHeights.value = newHeights;
   columns.value = newColumns;
+  columnCount.value = currentColumnCount;
 };
 
 // 加载下一批图片
@@ -178,21 +213,32 @@ const handleImageLoad = (event, image, columnIndex) => {
   imageLoaded.value[image] = true;
   loadedCount.value++;
   
-  // 调整列高度
+  // 使用图片真实宽高比计算高度，无限制显示
   const img = event.target;
   const actualHeight = img.naturalHeight;
-  const aspectRatio = img.naturalWidth / actualHeight;
-  const containerWidth = masonryContainer.value?.offsetWidth / columnCount.value - 16;
-  const calculatedHeight = containerWidth / aspectRatio;
+  const actualWidth = img.naturalWidth;
   
-  // 更新实际高度
-  if (calculatedHeight > 0) {
-    imageHeights.value[image] = calculatedHeight + 60; // 加上标题高度
+  if (actualHeight > 0 && actualWidth > 0) {
+    // 存储真实宽高比
+    imageAspectRatios.value[image] = actualWidth / actualHeight;
+    
+    // 严格按照原始宽高比计算高度，无高度限制
+    const containerWidth = (masonryContainer.value?.offsetWidth || 3000) / columnCount.value - 32;
+    const calculatedHeight = containerWidth / imageAspectRatios.value[image];
+    
+    // 计算完整高度（包含标题和间距）
+    const titleHeight = 50;
+    const gap = getCSSVariable('--masonry-gap') * 16;
+    const totalHeight = Math.round(calculatedHeight) + titleHeight + gap;
+    
+    // 更新为基于真实宽高比的高度
+    imageHeights.value[image] = totalHeight;
+    
+    // 重新布局以应用真实尺寸
+    nextTick(() => {
+      distributeImages(displayedImages.value);
+    });
   }
-  
-  nextTick(() => {
-    distributeImages(displayedImages.value);
-  });
 };
 
 // 处理图片加载错误
@@ -214,16 +260,7 @@ const handleScroll = () => {
   }
 };
 
-// 响应式调整
-const handleResize = () => {
-  const newColumnCount = calculateColumns();
-  if (newColumnCount !== columnCount.value) {
-    columnCount.value = newColumnCount;
-    nextTick(() => {
-      distributeImages(displayedImages.value);
-    });
-  }
-};
+
 
 // 获取图片列表
 const fetchImages = async () => {
@@ -280,6 +317,57 @@ watch(columnCount, () => {
   });
 });
 
+// 强制重新布局 - 基于真实图片尺寸的空白填补
+const forceReLayout = () => {
+  nextTick(() => {
+    const allImages = displayedImages.value;
+    
+    // 重新计算所有图片的高度，使用最新的容器宽度和真实宽高比
+    allImages.forEach(image => {
+      // 无论是否加载，都重新计算以适应新的容器宽度
+      getImageHeight(image);
+    });
+    
+    // 重新分配所有图片到列中，确保空白被正确填补
+    distributeImages(allImages);
+  });
+};
+
+
+
+// 监听窗口大小变化，优化性能
+const handleResize = () => {
+  // 使用防抖来优化性能
+  clearTimeout(window.resizeTimeout);
+  window.resizeTimeout = setTimeout(() => {
+    const newColumnCount = calculateColumns();
+    if (newColumnCount !== columnCount.value) {
+      columnCount.value = newColumnCount;
+    }
+    
+    // 无论列数是否变化，都重新布局以确保空白被正确填补
+    forceReLayout();
+  }, 150);
+};
+
+// 监听CSS变量变化
+const observeCSSVariables = () => {
+  const observer = new MutationObserver(() => {
+    const currentColumnCount = getCSSVariable('--masonry-columns');
+    if (currentColumnCount !== columnCount.value) {
+      columnCount.value = currentColumnCount;
+      distributeImages(displayedImages.value);
+    }
+  });
+  
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['style']
+  });
+  
+  return observer;
+};
+
 // 组件生命周期
 onMounted(() => {
   fetchImages();
@@ -290,11 +378,17 @@ onMounted(() => {
   
   // 初始计算列数
   columnCount.value = calculateColumns();
-});
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll);
-  window.removeEventListener('resize', handleResize);
+  
+  // 监听CSS变量变化
+  const cssObserver = observeCSSVariables();
+  
+  // 清理函数
+  onUnmounted(() => {
+    window.removeEventListener('scroll', handleScroll);
+    window.removeEventListener('resize', handleResize);
+    cssObserver.disconnect();
+    clearTimeout(window.resizeTimeout);
+  });
 });
 </script>
 
@@ -312,40 +406,58 @@ onUnmounted(() => {
 /* 瀑布流容器 */
 .masonry-container {
   width: 100%;
-  max-width: 1400px;
+  max-width: 3000px;
   margin: 0 auto;
   position: relative;
+  display: flex;
+  gap: var(--masonry-gap, 1rem);
+  align-items: flex-start;
 }
 
 .masonry-column {
-  display: inline-block;
-  vertical-align: top;
-  width: calc(100% / var(--columns, 3));
-  padding: 0 0.5rem;
-  box-sizing: border-box;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--masonry-gap, 1rem);
+  min-width: 0;
+  width: calc(100% / var(--masonry-columns, 3));
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .masonry-item {
-  margin-bottom: 1rem;
-  border-radius: 12px;
+  margin-bottom: var(--masonry-gap, 1rem);
+  border-radius: var(--masonry-item-radius, 12px);
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--masonry-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   background: var(--vp-c-bg);
   border: 1px solid var(--vp-c-divider);
   width: 100%;
-  animation: fadeInUp 0.6s ease-out forwards;
+  animation: slideIn 0.6s ease-out forwards;
   opacity: 0;
   transform: translateY(20px);
+  position: relative;
 }
 
 .masonry-item:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--masonry-shadow-hover, 0 8px 25px rgba(0, 0, 0, 0.25));
+  border-color: var(--vp-c-brand);
 }
 
-@keyframes fadeInUp {
+@keyframes slideIn {
   to {
     opacity: 1;
     transform: translateY(0);
@@ -360,15 +472,15 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  overflow: visible;
   margin: 0;
   padding: 0;
 }
 
 .image-container img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
   transition: opacity 0.3s ease, transform 0.3s ease;
   margin: 0;
@@ -390,12 +502,23 @@ onUnmounted(() => {
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--vp-c-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background: var(--vp-c-bg);
+  background: linear-gradient(to bottom, var(--vp-c-bg), var(--vp-c-bg-soft));
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.4;
+  min-height: 2.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  word-break: break-word;
+  overflow: visible;
+  white-space: normal;
+  border-top: 1px solid var(--vp-c-divider);
+  transition: all 0.2s ease;
+}
+
+.masonry-item:hover .image-name {
+  background: linear-gradient(to bottom, var(--vp-c-bg-soft), var(--vp-c-bg-mute));
+  color: var(--vp-c-brand);
 }
 
 /* 加载占位符 */
@@ -429,7 +552,7 @@ onUnmounted(() => {
 /* 占位组件样式 */
 .gallery-placeholder {
   width: 100%;
-  max-width: 1400px;
+  max-width: 3000px;
   margin: 0 auto;
   padding: 1rem;
   box-sizing: border-box;
@@ -551,20 +674,21 @@ onUnmounted(() => {
 
 /* 响应式设计 */
 @media (max-width: 1400px) {
-  .masonry-column {
-    width: calc(100% / 4);
+  :root {
+    --masonry-columns: 4;
   }
 }
 
 @media (max-width: 1200px) {
-  .masonry-column {
-    width: calc(100% / 3);
+  :root {
+    --masonry-columns: 3;
   }
 }
 
 @media (max-width: 992px) {
-  .masonry-column {
-    width: calc(100% / 2);
+  :root {
+    --masonry-columns: 2;
+    --masonry-gap: 0.75rem;
   }
   
   .placeholder-masonry {
@@ -577,17 +701,22 @@ onUnmounted(() => {
 }
 
 @media (max-width: 768px) {
+  :root {
+    --masonry-columns: 1;
+    --masonry-gap: 0.5rem;
+  }
+  
   .image-gallery {
     padding: 0.5rem;
   }
   
   .masonry-column {
     width: 100%;
-    padding: 0 0.25rem;
+    padding: 0;
   }
   
   .masonry-item {
-    margin-bottom: 0.75rem;
+    margin-bottom: var(--masonry-gap, 0.5rem);
   }
   
   .gallery-empty-placeholder {
@@ -601,13 +730,19 @@ onUnmounted(() => {
 }
 
 @media (max-width: 480px) {
+  :root {
+    --masonry-gap: 0.5rem;
+  }
+  
   .image-name {
-    font-size: 0.8rem;
-    padding: 0.5rem;
+    font-size: 0.85rem;
+    padding: 0.6rem;
+    line-height: 1.3;
+    min-height: 2.6em;
   }
   
   .masonry-item {
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--masonry-gap, 0.5rem);
   }
 }
 
@@ -615,6 +750,9 @@ onUnmounted(() => {
 :root {
   --masonry-gap: 1rem;
   --masonry-columns: 3;
+  --masonry-item-radius: 12px;
+  --masonry-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --masonry-shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.25);
 }
 
 @media (min-width: 1200px) {
