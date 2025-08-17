@@ -279,6 +279,7 @@ const fetchImages = async () => {
       '(拿出绳子,一把捆住藏狐).png',
       '藏狐黑化ing.png',
       '东北粗口.png',
+      '发情的输入法.png',
       '淦亖你啊.png',
       '狐言乱语，秦王迷惑.png',
       '黎泽懿滞销.png',
