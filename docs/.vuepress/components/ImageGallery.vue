@@ -366,6 +366,7 @@ const fetchImages = async () => {
       imageList = [
         { name: '（把藏狐绑起来）.png', pushDate: '2025-08-17' },
         { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-17' },
+        { name: '被威胁了就眨眼.png', pushDate: '2025-08-17' },
         { name: '藏狐黑化ing.png', pushDate: '2025-08-17' },
         { name: '藏狐自己养异世界の藏狐.png', pushDate: '2025-08-17' },
         { name: '东北粗口.png', pushDate: '2025-08-17' },
@@ -376,6 +377,7 @@ const fetchImages = async () => {
         { name: '龙尊本色.jpeg', pushDate: '2025-08-17' },
         { name: '你管？.png', pushDate: '2025-08-17' },
         { name: '你妈比的！.png', pushDate: '2025-08-17' },
+        { name: '群主说话显得自己很憨.png', pushDate: '2025-08-17' },
         { name: '让我回哪里去？？.png', pushDate: '2025-08-17' },
         { name: '入典.png', pushDate: '2025-08-17' },
         { name: '双重妈比.png', pushDate: '2025-08-17' },
