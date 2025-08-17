@@ -282,6 +282,7 @@ const fetchImages = async () => {
       '淦亖你啊.png',
       '黎泽懿滞销.png',
       '龙尊本色.jpeg',
+      '你管？.png',
       '你妈比的！.png',
       '入典.png',
       '双重妈比.png',
