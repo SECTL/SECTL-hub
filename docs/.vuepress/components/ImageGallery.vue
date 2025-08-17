@@ -1,7 +1,5 @@
 <template>
   <div class="masonry-gallery">
-    <!-- 图片扫描器组件 -->
-    <ImageScanner ref="scanner" @images-discovered="onImagesDiscovered" />
     
     <!-- 加载占位组件 -->
     <div v-if="loading && images.length === 0" class="loading-placeholder">
