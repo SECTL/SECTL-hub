@@ -280,6 +280,7 @@ const fetchImages = async () => {
       '藏狐黑化ing.png',
       '东北粗口.png',
       '淦亖你啊.png',
+      '狐言乱语，秦王迷惑.png',
       '黎泽懿滞销.png',
       '龙尊本色.jpeg',
       '你管？.png',
