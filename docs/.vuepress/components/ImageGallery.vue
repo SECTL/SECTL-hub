@@ -287,6 +287,7 @@ const fetchImages = async () => {
       '双重妈比.png',
       '拖出去斩了.png',
       '我不管.png',
+      '喜欢被霸.png',
       '小小小小小藏狐.png',
       '粤韵风华.png',
       '珍贵回忆.png',
