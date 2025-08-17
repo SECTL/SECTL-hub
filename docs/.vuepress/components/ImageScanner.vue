@@ -45,17 +45,6 @@ const statusText = computed(() => {
   }
 });
 
-// 添加日志
-const addLog = (message, type = 'info') => {
-  const now = new Date().toLocaleTimeString('zh-CN');
-  logs.value.push({
-    time: now,
-    message: message,
-    type: type
-  });
-  console.log(`[ImageScanner] ${type.toUpperCase()}: ${message}`);
-};
-
 // 扫描图片
 const scanImages = async () => {
   if (isScanning.value) return;
@@ -79,46 +68,59 @@ const scanImages = async () => {
             name: file.name,
             size: file.size,
             download_url: file.download_url,
-            source: 'github'
+            source: 'github',
+            pushDate: new Date(file.last_modified || Date.now()).toLocaleDateString('zh-CN', {
+            timeZone: 'Asia/Shanghai',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          }).replace(/\//g, '-')
           }));
         
         discoveredImages.value = images;
         status.value = 'success';
-        lastScanTime.value = new Date().toLocaleString('zh-CN');
+        lastScanTime.value = new Date().toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      hour12: false
+    });
         return;
       }
     } catch (e) {
       console.warn('GitHub API访问失败，使用本地扫描...');
     }
     
-    // 方法2: 使用内置列表
-    const fallbackImages = [
-        '（把藏狐绑起来）.png',
-        '(拿出绳子,一把捆住藏狐).png',
-        '藏狐黑化ing.png',
-        '藏狐自己养异世界の藏狐.png',
-        '东北粗口.png',
-        '发情的输入法.png',
-        '淦亖你啊.png',
-        '狐言乱语，秦王迷惑.png',
-        '黎泽懿滞销.png',
-        '龙尊本色.jpeg',
-        '你管？.png',
-        '你妈比的！.png',
-        '让我回哪里去？？.png',
-        '入典.png',
-        '双重妈比.png',
-        '拖出去斩了.png',
-        '我不管.png',
-        '喜欢被霸.png',
-        '小小小小小藏狐.png',
-        '粤韵风华.png',
-        '珍贵回忆.png',
-        'Deepthinking.png',
-        'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png'
+    // 方法2: 使用内置列表，包含图片名称和推送日期
+    const imageData = [
+        { name: '（把藏狐绑起来）.png', pushDate: '2024-01-15' },
+        { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2024-01-20' },
+        { name: '藏狐黑化ing.png', pushDate: '2024-01-25' },
+        { name: '藏狐自己养异世界の藏狐.png', pushDate: '2024-02-01' },
+        { name: '东北粗口.png', pushDate: '2024-02-05' },
+        { name: '发情的输入法.png', pushDate: '2024-02-10' },
+        { name: '淦亖你啊.png', pushDate: '2024-02-15' },
+        { name: '狐言乱语，秦王迷惑.png', pushDate: '2024-02-20' },
+        { name: '黎泽懿滞销.png', pushDate: '2024-02-25' },
+        { name: '龙尊本色.jpeg', pushDate: '2024-03-01' },
+        { name: '你管？.png', pushDate: '2024-03-05' },
+        { name: '你妈比的！.png', pushDate: '2024-03-10' },
+        { name: '让我回哪里去？？.png', pushDate: '2024-03-15' },
+        { name: '入典.png', pushDate: '2024-03-20' },
+        { name: '双重妈比.png', pushDate: '2024-03-25' },
+        { name: '拖出去斩了.png', pushDate: '2024-04-01' },
+        { name: '我不管.png', pushDate: '2024-04-05' },
+        { name: '喜欢被霸.png', pushDate: '2024-04-10' },
+        { name: '小小小小小藏狐.png', pushDate: '2024-04-15' },
+        { name: '粤韵风华.png', pushDate: '2024-04-20' },
+        { name: '珍贵回忆.png', pushDate: '2024-04-25' },
+        { name: 'Deepthinking.png', pushDate: '2024-05-01' },
+        { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2024-05-05' }
     ];
     
-    discoveredImages.value = fallbackImages.map(name => ({ name, source: 'local' }));
+    discoveredImages.value = imageData.map(item => ({ 
+        name: item.name, 
+        source: 'local',
+        pushDate: item.pushDate
+    }));
     status.value = 'success';
     lastScanTime.value = new Date().toLocaleString('zh-CN');
     

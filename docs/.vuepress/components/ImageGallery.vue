@@ -6,7 +6,7 @@
     <!-- 加载占位组件 -->
     <div v-if="loading && images.length === 0" class="loading-placeholder">
       <div 
-        v-for="i in 12" 
+        v-for="i in 12"
         :key="i" 
         class="placeholder-card"
         :style="{ height: getRandomHeight(250, 500) + 'px' }"
@@ -16,11 +16,33 @@
     <!-- 空状态占位组件 -->
     <div v-else-if="images.length === 0" class="empty-state">
       <div class="empty-icon">📷</div>
-      <h2 class="empty-title">暂无图片</h2>
-      <p class="empty-description">请检查图片文件是否存在</p>
+      <h2 class="empty-title">图片画廊空空如也</h2>
+      <p class="empty-description">
+        看起来还没有发现任何图片，让我们开始收集精彩瞬间吧！
+      </p>
+      <p class="empty-subtitle">
+        支持格式：JPG、PNG、GIF、WebP、SVG<br>
+        建议尺寸：建议宽度大于800px以获得最佳显示效果
+      </p>
+      
+      <div class="empty-stats">
+        <div class="empty-stat">
+          <span class="empty-stat-value">0</span>
+          <span class="empty-stat-label">已发现图片</span>
+        </div>
+        <div class="empty-stat">
+          <span class="empty-stat-value">{{ getSupportedFormats().length }}</span>
+          <span class="empty-stat-label">支持格式</span>
+        </div>
+      </div>
+      
       <div class="empty-actions">
-        <button class="refresh-btn" @click="reloadImages">🔄 重新加载</button>
-        <button class="scan-btn" @click="startScan">🔍 扫描图片</button>
+        <button class="refresh-btn" @click="reloadImages">
+          <span>🔄 重新加载</span>
+        </button>
+        <button class="scan-btn" @click="startScan">
+          <span>🔍 扫描图片</span>
+        </button>
       </div>
     </div>
     
@@ -46,11 +68,10 @@
           :key="image + '-' + index"
           class="masonry-item"
           :style="{ 
-            animationDelay: (index * 0.05) + 's',
-            breakInside: 'avoid',
+            animationDelay: (index * 0.05) + 's', 
+            breakInside: 'avoid', 
             marginBottom: '16px'
           }"
-          @click="openImage(image)"
         >
           <div class="masonry-card">
             <div class="card-image-container">
@@ -63,12 +84,18 @@
                 @error="handleImageError($event, image)"
                 :style="{ aspectRatio: getAspectRatio(image) }"
               />
-              <div class="card-image-loading" v-if="!imageLoaded[image]"></div>
+              <div 
+                class="card-image-loading" 
+                v-if="!imageLoaded[(image.name || image)]"
+                :style="{ opacity: imageLoaded[(image.name || image)] ? 0 : 1 }"
+                style="transition: opacity 0.3s ease-out;"
+              ></div>
             </div>
             <div class="card-content">
-              <h3 class="card-title">{{ formatImageName(image) }}</h3>
+              <h3 class="card-title">{{ formatImageName(image.name || image) }}</h3>
               <div class="card-meta">
-                <span class="type-badge">{{ getImageType(image) }}</span>
+                <span class="type-badge">{{ getImageType(image.name || image) }}</span>
+                <span class="date-badge" v-if="image.pushDate">{{ formatDate(image.pushDate) }}</span>
                 <span class="index-badge">{{ index + 1 }}/{{ images.length }}</span>
               </div>
             </div>
@@ -100,8 +127,8 @@ const loadedCount = ref(0);
 const masonryContainer = ref(null);
 
 // 瀑布流配置
-const columnCount = ref(3);
-const batchSize = 12;
+const columnCount = ref(4); 
+const batchSize = 12; 
 const currentBatch = ref(0);
 const isLoading = ref(false);
 
@@ -113,16 +140,34 @@ const breakpoints = {
 };
 
 // 格式化图片名称
-const formatImageName = (filename) => {
+const formatImageName = (image) => {
+  const filename = typeof image === 'object' ? image.name : image;
   const decodedName = decodeURIComponent(filename);
   const nameWithoutExt = decodedName.split('.').slice(0, -1).join('.');
   return nameWithoutExt;
 };
 
 // 获取图片类型
-const getImageType = (filename) => {
+const getImageType = (image) => {
+  const filename = typeof image === 'object' ? image.name : image;
   const extension = filename.split('.').pop()?.toUpperCase();
   return extension || 'IMAGE';
+};
+
+// 格式化日期显示 - 中国时间
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};
+
+// 获取支持的图片格式
+const getSupportedFormats = () => {
+  return ['JPG', 'JPEG', 'PNG', 'GIF', 'WebP', 'SVG'];
 };
 
 // 获取图片宽高比（用于瀑布流布局）
@@ -137,7 +182,8 @@ const getAspectRatio = (image) => {
   };
   
   // 根据文件名特征分配比例
-  const name = image.toLowerCase();
+  const filename = typeof image === 'object' ? image.name : image;
+  const name = filename.toLowerCase();
   if (name.includes('long') || name.includes('wide')) return ratios.wide;
   if (name.includes('tall') || name.includes('high')) return ratios.tall;
   if (name.includes('square')) return ratios.square;
@@ -156,22 +202,23 @@ const calculateColumns = () => {
     columnCount.value = 2; // 移动端两列
   } else if (width < breakpoints.tablet) {
     columnCount.value = 3; // 平板三列
-  } else if (width < breakpoints.desktop) {
-    columnCount.value = 4; // 桌面四列
   } else {
-    columnCount.value = 5; // 大屏五列
+    columnCount.value = 4; // 桌面及以上四列
   }
 };
 
 // 获取图片URL
-const getImageUrl = (filename) => {
-  // 将全角中文括号替换为半角英文括号，然后再编码
+const getImageUrl = (image) => {
+  const filename = typeof image === 'object' ? image.name : image;
   const encoded = encodeURIComponent(filename);
-  const fullUrl = `/images/${encoded}`;
+  
+  // 使用完整路径，确保路径正确
+  const basePath = window.location.origin;
+  const fullUrl = `${basePath}/images/${encoded}`;
   
   // 调试信息
   console.log(`🎯 生成图片URL: ${filename} -> ${fullUrl}`);
-  return fullUrl;
+  return `/images/${encoded}`; // 保持相对路径，但添加调试
 };
 
 // 生成随机高度用于占位符
@@ -179,45 +226,34 @@ const getRandomHeight = (min, max) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-// 打开图片（可以扩展为图片查看器）
-const openImage = (image) => {
-  const url = getImageUrl(image);
-  console.log('📷 打开图片:', image, 'URL:', url);
-  
-  // 测试图片URL是否有效
-  const img = new Image();
-  img.onload = () => {
-    console.log('✅ 图片可正常访问:', url);
-    // 这里可以打开图片查看器
-    window.open(url, '_blank');
-  };
-  img.onerror = () => {
-    console.error('❌ 图片访问失败:', url);
-    alert(`图片访问失败: ${image}\nURL: ${url}`);
-  };
-  img.src = url;
-};
-
 // 处理图片加载
 const handleImageLoad = (event, image) => {
-  imageLoaded.value[image] = true;
+  const key = typeof image === 'object' ? image.name : image;
+  imageLoaded.value[key] = true;
   loadedCount.value++;
-  console.log(`✅ 图片加载成功: ${image}`);
+  console.log(`✅ 图片加载成功: ${key}`);
+  
+  // 确保加载动画在300ms后完全消失
+  setTimeout(() => {
+    imageLoaded.value[key] = true;
+  }, 300);
 };
 
 // 处理图片加载错误
 const handleImageError = (event, image) => {
-  console.error(`❌ 图片加载失败: ${image}`);
+  const key = typeof image === 'object' ? image.name : image;
+  console.error(`❌ 图片加载失败: ${key}`);
   console.error(`尝试的URL: ${event.target.src}`);
   
   // 记录失败的图片
-  failedImages.value.push(image);
-  imageLoaded.value[image] = true;
+  failedImages.value.push(key);
+  imageLoaded.value[key] = true;
   loadedCount.value++;
   
-  // 显示错误占位符
+  // 直接结束加载状态，显示错误占位符
   event.target.style.display = 'none';
   const errorDiv = document.createElement('div');
+  errorDiv.className = 'error-placeholder';
   errorDiv.style.cssText = `
     background: #f5f5f5;
     color: #666;
@@ -225,8 +261,18 @@ const handleImageError = (event, image) => {
     text-align: center;
     font-size: 0.9rem;
     border-radius: 8px;
+    border: 1px dashed #ddd;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   `;
-  errorDiv.textContent = `图片加载失败: ${image}`;
+  errorDiv.innerHTML = `
+    <div style="font-size: 2rem; margin-bottom: 10px;">📷</div>
+    <div>图片加载失败</div>
+    <div style="font-size: 0.7rem; color: #999; margin-top: 5px;">${key}</div>
+  `;
   event.target.parentNode.appendChild(errorDiv);
 };
 
@@ -285,40 +331,62 @@ const fetchImages = async () => {
           imageList = files
             .filter(file => file.type === 'file')
             .filter(file => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name))
-            .map(file => file.name);
+            .map(file => ({
+              name: file.name,
+              pushDate: new Date(file.last_modified || Date.now()).toLocaleDateString('zh-CN', {
+                timeZone: 'Asia/Shanghai',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+              }).replace(/\//g, '-')
+            }));
           console.log('✅ 从GitHub API加载图片列表');
+        } else if (response.status === 404) {
+          console.log('⚠️ GitHub仓库或路径不存在，跳过API访问');
+        } else {
+          console.log(`⚠️ GitHub API访问受限 (${response.status})，使用内置列表`);
         }
       } catch (e) {
-        console.log('GitHub API访问失败，使用内置列表');
+        console.log('⚠️ GitHub API访问失败，使用内置列表');
       }
     }
     
-    // 方法2: 使用内置图片列表作为后备
+    // 方法2: 使用内置图片列表作为后备 - 使用中国当前日期
+    const getChinaDate = () => {
+      return new Date().toLocaleDateString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).replace(/\//g, '-');
+    };
+    
     if (imageList.length === 0) {
+      const chinaDate = getChinaDate();
       imageList = [
-        '（把藏狐绑起来）.png',
-        '(拿出绳子,一把捆住藏狐).png',
-        '藏狐黑化ing.png',
-        '藏狐自己养异世界の藏狐.png',
-        '东北粗口.png',
-        '发情的输入法.png',
-        '淦亖你啊.png',
-        '狐言乱语，秦王迷惑.png',
-        '黎泽懿滞销.png',
-        '龙尊本色.jpeg',
-        '你管？.png',
-        '你妈比的！.png',
-        '让我回哪里去？？.png',
-        '入典.png',
-        '双重妈比.png',
-        '拖出去斩了.png',
-        '我不管.png',
-        '喜欢被霸.png',
-        '小小小小小藏狐.png',
-        '粤韵风华.png',
-        '珍贵回忆.png',
-        'Deepthinking.png',
-        'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png'
+        { name: '（把藏狐绑起来）.png', pushDate: '2025-08-17' },
+        { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-17' },
+        { name: '藏狐黑化ing.png', pushDate: '2025-08-17' },
+        { name: '藏狐自己养异世界の藏狐.png', pushDate: '2025-08-17' },
+        { name: '东北粗口.png', pushDate: '2025-08-17' },
+        { name: '发情的输入法.png', pushDate: '2025-08-17' },
+        { name: '淦亖你啊.png', pushDate: '2025-08-17' },
+        { name: '狐言乱语，秦王迷惑.png', pushDate: '2025-08-17' },
+        { name: '黎泽懿滞销.png', pushDate: '2025-08-17' },
+        { name: '龙尊本色.jpeg', pushDate: '2025-08-17' },
+        { name: '你管？.png', pushDate: '2025-08-17' },
+        { name: '你妈比的！.png', pushDate: '2025-08-17' },
+        { name: '让我回哪里去？？.png', pushDate: '2025-08-17' },
+        { name: '入典.png', pushDate: '2025-08-17' },
+        { name: '双重妈比.png', pushDate: '2025-08-17' },
+        { name: '拖出去斩了.png', pushDate: '2025-08-17' },
+        { name: '我不管.png', pushDate: '2025-08-17' },
+        { name: '喜欢被霸.png', pushDate: '2025-08-17' },
+        { name: '小小小小小藏狐.png', pushDate: '2025-08-17' },
+        { name: '粤韵风华.png', pushDate: '2025-08-17' },
+        { name: '珍贵回忆.png', pushDate: '2025-08-17' },
+        { name: 'Deepthinking.png', pushDate: '2025-08-17' },
+        { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-08-17' }
       ];
       console.log('使用内置图片列表');
     }
@@ -342,7 +410,16 @@ const fetchImages = async () => {
     
     // 初始化加载状态
     images.value.forEach(image => {
-      imageLoaded.value[image] = false;
+      const key = typeof image === 'object' ? image.name : image;
+      imageLoaded.value[key] = false;
+      
+      // 添加5秒超时处理
+      setTimeout(() => {
+        if (imageLoaded.value[key] === false) {
+          console.warn(`⏰ 图片加载超时: ${key}`);
+          imageLoaded.value[key] = true; // 强制结束加载状态
+        }
+      }, 5000);
     });
     
     // 计算初始列数
@@ -427,9 +504,11 @@ onMounted(() => {
 <style scoped>
 /* 主容器样式 */
 .masonry-gallery {
-  padding: 20px;
-  max-width: 1400px;
+  padding: 25px 15px; 
   margin: 0 auto;
+  max-width: none; 
+  width: 100%;
+  display: grid;
 }
 
 /* 加载占位符 */
@@ -451,66 +530,162 @@ onMounted(() => {
   100% { background-position: -200% 0; }
 }
 
+@keyframes fadeOut { 
+  from { opacity: 1; visibility: visible; }
+  to { opacity: 0; visibility: hidden; }
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
 /* 空状态 */
 .empty-state {
   text-align: center;
-  padding: 80px 20px;
+  padding: 120px 40px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 20px;
+  margin: 40px auto;
+  max-width: 600px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .empty-icon {
-  font-size: 4rem;
-  margin-bottom: 20px;
-  opacity: 0.5;
+  font-size: 5rem;
+  margin-bottom: 30px;
+  opacity: 0.7;
+  animation: float 3s ease-in-out infinite;
+  background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 .empty-title {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-  color: #666;
+  font-size: 1.8rem;
+  margin-bottom: 15px;
+  color: #2c3e50;
+  font-weight: 600;
+  letter-spacing: -0.5px;
 }
 
 .empty-description {
-  color: #999;
-  margin-bottom: 30px;
+  color: #6c757d;
+  margin-bottom: 40px;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.empty-subtitle {
+  color: #8e959d;
+  font-size: 0.95rem;
+  margin-bottom: 25px;
+  line-height: 1.5;
 }
 
 .empty-actions {
   display: flex;
-  gap: 15px;
+  gap: 20px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 30px;
 }
 
 .refresh-btn,
 .scan-btn {
-  padding: 12px 24px;
+  padding: 14px 28px;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 1rem;
-  transition: all 0.3s ease;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  min-width: 140px;
 }
 
 .refresh-btn {
-  background: #007bff;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
 .scan-btn {
-  background: #28a745;
+  background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
   color: white;
+  box-shadow: 0 4px 15px rgba(86, 171, 47, 0.4);
 }
 
 .refresh-btn:hover,
 .scan-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.refresh-btn:active,
+.scan-btn:active {
+  transform: translateY(-1px);
+}
+
+.refresh-btn::before,
+.scan-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.refresh-btn:hover::before,
+.scan-btn:hover::before {
+  left: 100%;
 }
 
 .refresh-btn.small,
 .scan-btn.small {
-  padding: 8px 16px;
+  padding: 10px 20px;
   font-size: 0.9rem;
+  min-width: 120px;
+}
+
+.empty-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin: 25px 0;
+  flex-wrap: wrap;
+}
+
+.empty-stat {
+  text-align: center;
+}
+
+.empty-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #667eea;
+  display: block;
+}
+
+.empty-stat-label {
+  font-size: 0.85rem;
+  color: #8e959d;
+  margin-top: 5px;
 }
 
 /* 信息卡片 */
@@ -538,7 +713,7 @@ onMounted(() => {
 }
 
 .masonry-columns {
-  column-gap: 20px;
+  column-gap: 25px;
   column-fill: balance;
 }
 
@@ -596,10 +771,52 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%, #f8f9fa 100%);
+  background-size: 200% 200%;
+  animation: loading 2s ease-in-out infinite;
   border-radius: 12px 12px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.card-image-loading::before {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e9ecef;
+  border-top: 3px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+}
+
+@media (max-width: 640px) {
+  .card-image-loading::before {
+    width: 32px;
+    height: 32px;
+    border-width: 2px;
+  }
+}
+
+@media (max-width: 400px) {
+  .card-image-loading::before {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.card-image-loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  animation: shimmer 1.5s infinite;
 }
 
 /* 内容区域 */
@@ -618,29 +835,76 @@ onMounted(() => {
 
 .card-meta {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .type-badge,
 .index-badge {
-  font-size: 0.8rem;
-  padding: 4px 8px;
-  border-radius: 12px;
-  background: #f0f0f0;
-  color: #666;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .type-badge {
   background: #e3f2fd;
-  color: #1976d2;
+  color: #1565c0;
+  border-color: #90caf9;
+}
+
+.type-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.date-badge {
+  background: #e8f4fd;
+  color: #0288d1;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  box-shadow: 0 1px 2px rgba(2, 136, 209, 0.1);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid #b3e5fc;
+}
+
+.date-badge::before {
+  content: '📅';
+  font-size: 0.6rem;
+}
+
+.date-badge:hover {
+  background: #b3e5fc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(2, 136, 209, 0.2);
 }
 
 .index-badge {
   background: #f3e5f5;
   color: #7b1fa2;
+  border-color: #ce93d8;
+}
+
+.index-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(123, 31, 162, 0.2);
 }
 
 /* 加载更多 */
@@ -670,7 +934,10 @@ onMounted(() => {
 /* 响应式设计 */
 @media (max-width: 640px) {
   .masonry-gallery {
-    padding: 10px;
+    padding: 10px 8px;
+    margin: 0;
+    max-width: none;
+    width: 100%;
   }
   
   .masonry-columns {
@@ -689,6 +956,32 @@ onMounted(() => {
   .card-title {
     font-size: 0.9rem;
   }
+  
+  .date-badge,
+  .type-badge,
+  .index-badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+    border-radius: 6px;
+    gap: 1px;
+  }
+  
+  .date-badge::before {
+    font-size: 0.55rem;
+  }
+  
+  .card-meta {
+    gap: 4px;
+  }
+}
+
+@media (max-width: 400px) {
+  .date-badge,
+  .type-badge,
+  .index-badge {
+    font-size: 0.55rem;
+    padding: 1px 3px;
+  }
 }
 
 @media (min-width: 641px) and (max-width: 1024px) {
@@ -706,13 +999,6 @@ onMounted(() => {
   .masonry-columns {
     column-count: 4 !important;
     column-gap: 20px;
-  }
-}
-
-@media (min-width: 1441px) {
-  .masonry-columns {
-    column-count: 5 !important;
-    column-gap: 25px;
   }
 }
 

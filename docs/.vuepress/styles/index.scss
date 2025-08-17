@@ -49,7 +49,7 @@
   
   // 瀑布流配置
   --masonry-gap: var(--space-md);
-  --masonry-columns: 4;
+  --masonry-columns: 5;
   --masonry-item-radius: var(--radius-lg);
   --masonry-shadow: var(--shadow-md);
   --masonry-shadow-hover: var(--shadow-lg);
@@ -114,7 +114,7 @@ html[data-theme="dark"] {
 // 瀑布流网格容器
 .masonry-grid {
   width: 100%;
-  max-width: 1400px;
+  max-width: 1800px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(var(--masonry-columns), 1fr);
@@ -499,6 +499,85 @@ html[data-theme="dark"] {
 // 滚动性能优化
 .masonry-grid {
   -webkit-overflow-scrolling: touch;
+}
+
+// 首页全宽铺满
+body.home [vp-content],
+body.home #markdown-content,
+body.home .theme-hope-content,
+body.home main,
+body.home .masonry-gallery,
+body.home .masonry-container,
+body.home .page,
+body.home .theme-container,
+body.home .vp-page {
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+body.home .sidebar {
+  display: none !important;
+}
+
+body.home .theme-hope-content {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body.home .page {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* 主页容器全宽修复 - 增强版 */
+body.home,
+body.home div,
+body.home main,
+body.home section,
+body.home article,
+body.home aside,
+body.home header,
+body.home footer {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box;
+}
+
+/* 特别排除加载占位符 */
+.loading-placeholder,
+.loading-placeholder * {
+  all: unset !important;
+  display: revert !important;
+}
+
+.loading-placeholder {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 1rem !important;
+  padding: 1rem !important;
+  width: 100% !important;
+}
+
+/* 加载占位符保持原有布局 */
+.loading-placeholder {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  padding: 1rem !important;
+  box-sizing: border-box;
+}
+
+.loading-placeholder > div {
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
 }
 
 // 打印样式

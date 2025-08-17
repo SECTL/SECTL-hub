@@ -1,9 +1,7 @@
 ---
 home: true
-icon: home
 title: SECTL-hub
 heroFullScreen: false
-
 footer: 由 SECTL 交流群成员共同维护
 ---
 

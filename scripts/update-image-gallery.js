@@ -25,8 +25,16 @@ function updateImageGallery(images) {
   try {
     let content = fs.readFileSync(IMAGE_GALLERY_PATH, 'utf8');
     
-    // 生成新的图片数组字符串
-    const imageListStr = images.map(img => `        '${img.replace(/'/g, "\\'")}'`).join(',\n');
+    // 获取当前日期，格式为 YYYY-MM-DD（中国时间）
+    const today = new Date().toLocaleDateString('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).replace(/\//g, '-');
+    
+    // 生成新的图片数组字符串，包含日期信息
+    const imageListStr = images.map(img => `        { name: '${img.replace(/'/g, "\\'")}', pushDate: '${today}' }`).join(',\n');
     
     // 查找内置图片列表数组
     // 查找 "方法2: 使用内置图片列表作为后备" 注释后的数组定义
@@ -37,13 +45,13 @@ function updateImageGallery(images) {
     
     const match = content.match(method2Pattern);
     if (match) {
-      newContent = content.replace(method2Pattern, `$1\n${imageListStr}$3`);
+      newContent = content.replace(method2Pattern, `$1\n${imageListStr}\n      ];`);
       updated = true;
     } else {
       // 备用方案：查找任何包含图片数组的地方
       console.log('尝试备用方案...');
       
-      // 查找包含图片名称的数组
+      // 查找包含图片名称的数组（支持对象格式）
       const imageArrayPattern = /imageList = \[([\s\S]*?)\];/;
       const imageMatch = content.match(imageArrayPattern);
       
@@ -83,8 +91,6 @@ function main() {
   const success = updateImageGallery(images);
   
   if (success) {
-    // manifest.json生成已禁用
-    generateManifest(images); // 空函数调用，仅保持兼容性
     console.log('🎉 图片画廊更新完成！');
   } else {
     console.log('❌ 图片画廊更新失败！');
