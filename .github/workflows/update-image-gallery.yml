@@ -1,4 +1,4 @@
-name: Update Image Gallery
+name: 🔄 智能图片画廊更新
 
 on:
   push:
@@ -10,6 +10,12 @@ on:
     paths:
       - 'docs/.vuepress/public/images/**'
   workflow_dispatch:
+    inputs:
+      force_update:
+        description: '强制更新所有文件'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   update-gallery:
@@ -30,10 +36,16 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Update Image Gallery
+    - name: 📸 更新图片画廊
       run: |
-        echo "检测到图片目录变动，正在更新图片画廊..."
+        echo "🔄 检测到图片目录变动，正在执行智能更新..."
+        echo "📁 图片目录: docs/.vuepress/public/images"
+        
+        # 执行更新脚本
         node scripts/update-image-gallery.js
+        
+        # 显示更新结果
+        echo "✅ 图片画廊更新完成"
     
     - name: Check for changes
       id: verify-changed-files

@@ -12,7 +12,7 @@ function getImageFiles() {
     return files
       .filter(file => {
         const ext = path.extname(file).toLowerCase();
-        return imageExtensions.includes(ext);
+        return imageExtensions.includes(ext) && file !== 'manifest.json' && file !== 'auto-update.js';
       })
       .sort((a, b) => a.localeCompare(b, 'zh-CN'));
   } catch (error) {
@@ -26,37 +26,41 @@ function updateImageGallery(images) {
     let content = fs.readFileSync(IMAGE_GALLERY_PATH, 'utf8');
     
     // 生成新的图片数组字符串
-    const imageListStr = images.map(img => `      '${img}'`).join(',\n');
+    const imageListStr = images.map(img => `        '${img.replace(/'/g, "\\'")}'`).join(',\n');
     
-    // 替换原有的内置图片列表
-    const pattern = /(\/\/ 回退到内置图片列表\s+const imageExtensions = \[.*?\];\s+const builtinImages = \[)[\s\S]*?(\s+\];)/;
+    // 查找内置图片列表数组
+    // 查找 "方法2: 使用内置图片列表作为后备" 注释后的数组定义
+    const method2Pattern = /(\/\/ 方法2: 使用内置图片列表作为后备[\s\S]*?imageList = \[)([\s\S]*?)(\s+\];)/;
     
-    const newContent = content.replace(pattern, 
-      `$1\n${imageListStr}$2`
-    );
+    let newContent = content;
+    let updated = false;
     
-    if (newContent === content) {
-      console.log('没有找到需要替换的图片列表，尝试备用模式...');
-      
-      // 备用模式：直接查找数组定义
-      const arrayPattern = /const builtinImages = \[([\s\S]*?)\];/;
-      const arrayMatch = content.match(arrayPattern);
-      
-      if (arrayMatch) {
-        const newArray = `const builtinImages = [\n${imageListStr}\n    ];`;
-        const finalContent = content.replace(arrayPattern, newArray);
-        fs.writeFileSync(IMAGE_GALLERY_PATH, finalContent, 'utf8');
-        console.log('✅ 图片画廊已使用备用模式更新');
-      } else {
-        console.error('❌ 无法找到图片列表进行更新');
-        return false;
-      }
+    const match = content.match(method2Pattern);
+    if (match) {
+      newContent = content.replace(method2Pattern, `$1\n${imageListStr}$3`);
+      updated = true;
     } else {
-      fs.writeFileSync(IMAGE_GALLERY_PATH, newContent, 'utf8');
-      console.log('✅ 图片画廊已成功更新');
+      // 备用方案：查找任何包含图片数组的地方
+      console.log('尝试备用方案...');
+      
+      // 查找包含图片名称的数组
+      const imageArrayPattern = /imageList = \[([\s\S]*?)\];/;
+      const imageMatch = content.match(imageArrayPattern);
+      
+      if (imageMatch) {
+        newContent = content.replace(imageArrayPattern, `imageList = [\n${imageListStr}\n      ];`);
+        updated = true;
+      }
     }
     
-    return true;
+    if (updated) {
+      fs.writeFileSync(IMAGE_GALLERY_PATH, newContent, 'utf8');
+      console.log('✅ 图片画廊已成功更新');
+      return true;
+    } else {
+      console.error('❌ 无法找到内置图片列表进行更新');
+      return false;
+    }
   } catch (error) {
     console.error('更新图片画廊失败:', error.message);
     return false;
@@ -79,6 +83,8 @@ function main() {
   const success = updateImageGallery(images);
   
   if (success) {
+    // manifest.json生成已禁用
+    generateManifest(images); // 空函数调用，仅保持兼容性
     console.log('🎉 图片画廊更新完成！');
   } else {
     console.log('❌ 图片画廊更新失败！');
