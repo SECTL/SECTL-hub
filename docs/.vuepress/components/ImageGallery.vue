@@ -293,7 +293,8 @@ const fetchImages = async () => {
       '小小小小小藏狐.png',
       '粤韵风华.png',
       '珍贵回忆.png',
-      'Deepthinking.png'
+      'Deepthinking.png',
+      'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png'
     ];
     
     const validImages = builtinImages.filter(filename => {
