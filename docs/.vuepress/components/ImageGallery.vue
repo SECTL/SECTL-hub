@@ -447,7 +447,9 @@ const fetchImages = async () => {
         { name: '有盒同享.png', pushDate: '2025-08-18' },
         { name: '粤韵风华.png', pushDate: '2025-08-18' },
         { name: '珍贵回忆.png', pushDate: '2025-08-18' },
+        { name: '只有精没有华消息.png', pushDate: '2025-08-18' },
         { name: 'Deepthinking.png', pushDate: '2025-08-18' },
+        { name: 'Grok-SECTL纯享版.png', pushDate: '2025-08-18' },
         { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-08-18' }
       ];
       console.log('使用内置图片列表');
