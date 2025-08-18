@@ -16,7 +16,8 @@
       <div class="empty-icon">📷</div>
       <h2 class="empty-title">图片画廊空空如也</h2>
       <p class="empty-description">
-        看起来还没有发现任何图片，让我们开始收集精彩瞬间吧！
+        看起来还没有发现任何图片，<br>
+        让我们开始收集精彩瞬间吧！
       </p>
       <p class="empty-subtitle">
         支持格式：JPG、PNG、GIF、WebP、SVG<br>
@@ -38,9 +39,6 @@
         <button class="refresh-btn" @click="reloadImages">
           <span>🔄 重新加载</span>
         </button>
-        <button class="scan-btn" @click="startScan">
-          <span>🔍 扫描图片</span>
-        </button>
       </div>
     </div>
     
@@ -54,20 +52,23 @@
           <strong>{{ displayedImages.length }}</strong> 张已加载
         </span>
         <button class="refresh-btn small" @click="reloadImages">🔄 刷新</button>
-        <button class="scan-btn small" @click="startScan">🔍 扫描</button>
       </div>
     </div>
     
     <!-- 智能瀑布流布局 -->
     <div v-else class="masonry-container" ref="masonryContainer">
-      <div class="masonry-columns" :style="{ columnCount: columnCount }">
+      <div 
+        v-for="(column, columnIndex) in columns" 
+        :key="columnIndex" 
+        class="masonry-column"
+        :style="{ width: `calc(${100 / columnCount}% - ${(columnCount - 1) * 12.5}px)` }"
+      >
         <div 
-          v-for="(image, index) in displayedImages"
+          v-for="(image, index) in column" 
           :key="image + '-' + index"
           class="masonry-item"
           :style="{ 
             animationDelay: (index * 0.05) + 's', 
-            breakInside: 'avoid', 
             marginBottom: '16px'
           }"
         >
@@ -94,25 +95,24 @@
               <div class="card-meta">
                 <span class="type-badge">{{ getImageType(image.name || image) }}</span>
                 <span class="date-badge" v-if="image.pushDate">{{ formatDate(image.pushDate) }}</span>
-                <span class="index-badge">{{ index + 1 }}/{{ images.length }}</span>
+                <span class="index-badge">{{ getColumnImageIndex(columnIndex, index) + 1 }}/{{ images.length }}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
-      <!-- 加载更多占位符 -->
-      <div v-if="loadingMore" class="loading-more">
-        <div class="loading-spinner"></div>
-        <span>加载更多图片...</span>
-      </div>
+    </div>
+    
+    <!-- 加载更多占位符 -->
+    <div v-if="loadingMore" class="loading-more">
+      <div class="loading-spinner"></div>
+      <span>加载更多图片...</span>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
-import ImageScanner from './ImageScanner.vue';
 
 // 状态变量
 const loading = ref(true);
@@ -129,6 +129,9 @@ const columnCount = ref(4);
 const batchSize = 12; 
 const currentBatch = ref(0);
 const isLoading = ref(false);
+
+// 瀑布流列
+const columns = ref([]);
 
 // 响应式断点
 const breakpoints = {
@@ -203,6 +206,32 @@ const calculateColumns = () => {
   } else {
     columnCount.value = 4; // 桌面及以上四列
   }
+  
+  // 重新分配图片到列
+  distributeImagesToColumns();
+};
+
+// 将图片分配到各列
+const distributeImagesToColumns = () => {
+  // 初始化列
+  const newColumns = Array.from({ length: columnCount.value }, () => []);
+  
+  // 将已显示的图片分配到各列
+  displayedImages.value.forEach((image, index) => {
+    const columnIndex = index % columnCount.value;
+    newColumns[columnIndex].push(image);
+  });
+  
+  columns.value = newColumns;
+};
+
+// 获取列中图片的全局索引
+const getColumnImageIndex = (columnIndex, indexInColumn) => {
+  let globalIndex = 0;
+  for (let i = 0; i < columnIndex; i++) {
+    globalIndex += columns.value[i].length;
+  }
+  return globalIndex + indexInColumn;
 };
 
 // 获取图片URL
@@ -299,7 +328,12 @@ const loadMoreImages = async () => {
   // 延迟加载以展示加载动画
   await new Promise(resolve => setTimeout(resolve, 600));
   
-  displayedImages.value.push(...newImages);
+  // 将新图片添加到已显示图片列表的末尾
+  displayedImages.value = [...displayedImages.value, ...newImages];
+  
+  // 重新分配图片到各列
+  distributeImagesToColumns();
+  
   currentBatch.value++;
   isLoading.value = false;
   loadingMore.value = false;
@@ -316,20 +350,50 @@ const fetchImages = async () => {
     // 尝试多种方式获取图片列表
     let imageList = [];
     
-    // 方法1: 扫描images目录
+    // 方法1: 使用GitHub API获取图片列表和实际上传时间
     if (imageList.length === 0) {
       try {
-        // 使用GitHub API获取目录内容（适用于GitHub Pages）
         const repo = 'SECTL/SECTL-hub';
-        const apiUrl = `https://api.github.com/repos/${repo}/contents/docs/.vuepress/public/images`;
+        const imagesPath = 'docs/.vuepress/public/images';
         
-        const response = await fetch(apiUrl);
+        // 获取目录内容
+        const contentsUrl = `https://api.github.com/repos/${repo}/contents/${imagesPath}`;
+        const response = await fetch(contentsUrl);
+        
         if (response.ok) {
           const files = await response.json();
-          imageList = files
-            .filter(file => file.type === 'file')
-            .filter(file => /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name))
-            .map(file => ({
+          const imageFiles = files.filter(file => 
+            file.type === 'file' && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name)
+          );
+          
+          // 为每个图片获取提交历史以获取实际上传时间
+          const imagePromises = imageFiles.map(async (file) => {
+            try {
+              // 获取该文件的提交历史
+              const commitsUrl = `https://api.github.com/repos/${repo}/commits?path=${encodeURIComponent(imagesPath + '/' + file.name)}&per_page=1`;
+              const commitResponse = await fetch(commitsUrl);
+              
+              if (commitResponse.ok) {
+                const commits = await commitResponse.json();
+                if (commits.length > 0) {
+                  const commitDate = commits[0].commit.author.date;
+                  return {
+                    name: file.name,
+                    pushDate: new Date(commitDate).toLocaleDateString('zh-CN', {
+                      timeZone: 'Asia/Shanghai',
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit'
+                    }).replace(/\//g, '-')
+                  };
+                }
+              }
+            } catch (e) {
+              console.warn(`获取 ${file.name} 的提交历史失败:`, e);
+            }
+            
+            // 如果无法获取提交历史，使用文件的最后修改时间
+            return {
               name: file.name,
               pushDate: new Date(file.last_modified || Date.now()).toLocaleDateString('zh-CN', {
                 timeZone: 'Asia/Shanghai',
@@ -337,8 +401,11 @@ const fetchImages = async () => {
                 month: '2-digit',
                 day: '2-digit'
               }).replace(/\//g, '-')
-            }));
-          console.log('✅ 从GitHub API加载图片列表');
+            };
+          });
+          
+          imageList = await Promise.all(imagePromises);
+          console.log('✅ 从GitHub API加载图片列表和实际上传时间');
         } else if (response.status === 404) {
           console.log('⚠️ GitHub仓库或路径不存在，跳过API访问');
         } else {
@@ -349,44 +416,34 @@ const fetchImages = async () => {
       }
     }
     
-    // 方法2: 使用内置图片列表作为后备 - 使用中国当前日期
-    const getChinaDate = () => {
-      return new Date().toLocaleDateString('zh-CN', {
-        timeZone: 'Asia/Shanghai',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      }).replace(/\//g, '-');
-    };
-    
+    // 方法2: 使用内置图片列表作为后备
     if (imageList.length === 0) {
-      const chinaDate = getChinaDate();
       imageList = [
-        { name: '（把藏狐绑起来）.png', pushDate: '2025-08-17' },
+        { name: '（把藏狐绑起来）.png', pushDate: '2025-08-16' },
         { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-17' },
         { name: '被威胁了就眨眼.png', pushDate: '2025-08-17' },
-        { name: '藏狐黑化ing.png', pushDate: '2025-08-17' },
+        { name: '藏狐黑化ing.png', pushDate: '2025-08-16' },
         { name: '藏狐自己养异世界の藏狐.png', pushDate: '2025-08-17' },
-        { name: '东北粗口.png', pushDate: '2025-08-17' },
+        { name: '东北粗口.png', pushDate: '2025-08-16' },
         { name: '东北方言.png', pushDate: '2025-08-17' },
         { name: '发情的输入法.png', pushDate: '2025-08-17' },
-        { name: '淦亖你啊.png', pushDate: '2025-08-17' },
+        { name: '淦亖你啊.png', pushDate: '2025-08-16' },
         { name: '狐言乱语，秦王迷惑.png', pushDate: '2025-08-17' },
         { name: '黎泽懿滞销.png', pushDate: '2025-08-17' },
         { name: '龙尊本色.jpeg', pushDate: '2025-08-17' },
         { name: '你管？.png', pushDate: '2025-08-17' },
-        { name: '你妈比的！.png', pushDate: '2025-08-17' },
+        { name: '你妈比的！.png', pushDate: '2025-08-16' },
         { name: '群主说话显得自己很憨.png', pushDate: '2025-08-17' },
         { name: '让我回哪里去？？.png', pushDate: '2025-08-17' },
-        { name: '入典.png', pushDate: '2025-08-17' },
+        { name: '入典.png', pushDate: '2025-08-16' },
         { name: '双重妈比.png', pushDate: '2025-08-17' },
-        { name: '拖出去斩了.png', pushDate: '2025-08-17' },
-        { name: '我不管.png', pushDate: '2025-08-17' },
+        { name: '拖出去斩了.png', pushDate: '2025-08-16' },
+        { name: '我不管.png', pushDate: '2025-08-16' },
         { name: '喜欢被霸.png', pushDate: '2025-08-17' },
         { name: '小小小小小藏狐.png', pushDate: '2025-08-17' },
         { name: '一世阴名.png', pushDate: '2025-08-17' },
         { name: '有盒同享.png', pushDate: '2025-08-17' },
-        { name: '粤韵风华.png', pushDate: '2025-08-17' },
+        { name: '粤韵风华.png', pushDate: '2025-08-16' },
         { name: '珍贵回忆.png', pushDate: '2025-08-17' },
         { name: 'Deepthinking.png', pushDate: '2025-08-17' },
         { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-08-17' }
@@ -408,7 +465,8 @@ const fetchImages = async () => {
     
     // 初始化第一批显示的图片
     const initialImages = images.value.slice(0, batchSize);
-    displayedImages.value = initialImages;
+    // 使用展开运算符确保响应式更新
+    displayedImages.value = [...initialImages];
     currentBatch.value = 1;
     
     // 初始化加载状态
@@ -426,7 +484,10 @@ const fetchImages = async () => {
     });
     
     // 计算初始列数
-    calculateColumns();
+calculateColumns();
+    
+    // 分配图片到各列
+    distributeImagesToColumns();
     
     console.log(`✅ 成功加载 ${images.value.length} 张图片`);
     
@@ -444,6 +505,7 @@ const reloadImages = async () => {
   currentBatch.value = 0;
   loadedCount.value = 0;
   imageLoaded.value = {};
+  columns.value = [];
   await fetchImages();
 };
 
@@ -713,15 +775,16 @@ onMounted(() => {
 /* 智能瀑布流布局 */
 .masonry-container {
   width: 100%;
+  display: flex;
+  gap: 25px;
 }
 
-.masonry-columns {
-  column-gap: 25px;
-  column-fill: balance;
+.masonry-column {
+  display: flex;
+  flex-direction: column;
 }
 
 .masonry-item {
-  break-inside: avoid;
   margin-bottom: 20px;
   animation: fadeInUp 0.6s ease-out forwards;
   opacity: 0;
@@ -943,9 +1006,8 @@ onMounted(() => {
     width: 100%;
   }
   
-  .masonry-columns {
-    column-count: 2 !important;
-    column-gap: 10px;
+  .masonry-container {
+    gap: 10px;
   }
   
   .masonry-item {
@@ -988,20 +1050,12 @@ onMounted(() => {
 }
 
 @media (min-width: 641px) and (max-width: 1024px) {
-  .masonry-columns {
-    column-count: 3 !important;
-    column-gap: 15px;
+  .masonry-container {
+    gap: 15px;
   }
   
   .masonry-item {
     margin-bottom: 15px;
-  }
-}
-
-@media (min-width: 1025px) and (max-width: 1440px) {
-  .masonry-columns {
-    column-count: 4 !important;
-    column-gap: 20px;
   }
 }
 

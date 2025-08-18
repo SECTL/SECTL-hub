@@ -25,16 +25,33 @@ function updateImageGallery(images) {
   try {
     let content = fs.readFileSync(IMAGE_GALLERY_PATH, 'utf8');
     
-    // 获取当前日期，格式为 YYYY-MM-DD（中国时间）
-    const today = new Date().toLocaleDateString('zh-CN', {
-      timeZone: 'Asia/Shanghai',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/\//g, '-');
+    // 为每张图片获取真实的文件修改时间，格式为 YYYY-MM-DD（中国时间）
+    const imagesWithDates = images.map(img => {
+      const filePath = path.join(IMAGES_DIR, img);
+      try {
+        const stats = fs.statSync(filePath);
+        const pushDate = new Date(stats.mtime).toLocaleDateString('zh-CN', {
+          timeZone: 'Asia/Shanghai',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).replace(/\//g, '-');
+        return { name: img, pushDate };
+      } catch (error) {
+        console.warn(`无法获取 ${img} 的修改时间:`, error.message);
+        // 如果无法获取文件时间，使用当前日期作为后备
+        const today = new Date().toLocaleDateString('zh-CN', {
+          timeZone: 'Asia/Shanghai',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).replace(/\//g, '-');
+        return { name: img, pushDate: today };
+      }
+    });
     
-    // 生成新的图片数组字符串，包含日期信息
-    const imageListStr = images.map(img => `        { name: '${img.replace(/'/g, "\\'")}', pushDate: '${today}' }`).join(',\n');
+    // 生成新的图片数组字符串，包含真实的修改时间
+    const imageListStr = imagesWithDates.map(img => `        { name: '${img.name.replace(/'/g, "\\'")}', pushDate: '${img.pushDate}' }`).join(',\n');
     
     // 查找内置图片列表数组
     // 查找 "方法2: 使用内置图片列表作为后备" 注释后的数组定义
