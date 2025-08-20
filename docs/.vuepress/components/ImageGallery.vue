@@ -422,7 +422,7 @@ const fetchImages = async () => {
         { name: '（把藏狐绑起来）.png', pushDate: '2025-08-20' },
         { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-20' },
         { name: '被威胁了就眨眼.png', pushDate: '2025-08-20' },
-        { name: '本新是人机?!.png', pushDate: '2025-08-20' },
+        { name: '本新是人机？！.png', pushDate: '2025-08-20' },
         { name: '藏狐黑化ing.png', pushDate: '2025-08-20' },
         { name: '藏狐自己养异世界の藏狐.png', pushDate: '2025-08-20' },
         { name: '茶馆馆主带头喝茶.png', pushDate: '2025-08-20' },
