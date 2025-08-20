@@ -454,7 +454,8 @@ const fetchImages = async () => {
         { name: '只有精没有华消息.png', pushDate: '2025-08-20' },
         { name: 'Deepthinking.png', pushDate: '2025-08-20' },
         { name: 'Grok-SECTL纯享版.png', pushDate: '2025-08-20' },
-        { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-08-20' }
+        { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-08-20' },
+        { name: 'sectlmiao.png', pushDate: '2025-08-20' }
       ];
       console.log('使用内置图片列表');
     }
