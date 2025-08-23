@@ -459,6 +459,8 @@ const fetchImages = async () => {
         { name: '拖出去斩了.png', pushDate: '2025-08-23' },
         { name: '我不管.png', pushDate: '2025-08-23' },
         { name: '喜欢被霸.png', pushDate: '2025-08-23' },
+        { name: '香香软软吹弹可破的藏狐_85.png', pushDate: '2025-08-23' },
+        { name: '香香软软吹弹可破的藏狐.png', pushDate: '2025-08-23' },
         { name: '香香软软群主.png', pushDate: '2025-08-23' },
         { name: '小小小小小藏狐.png', pushDate: '2025-08-23' },
         { name: '一世阴名.png', pushDate: '2025-08-23' },
