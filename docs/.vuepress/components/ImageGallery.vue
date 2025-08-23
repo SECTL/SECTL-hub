@@ -475,6 +475,7 @@ const fetchImages = async () => {
         { name: 'Deepthinking.png', pushDate: '2025-08-23' },
         { name: 'Grok-SECTL纯享版.png', pushDate: '2025-08-23' },
         { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-08-23' },
+        { name: 'pH>12.png', pushDate: '2025-08-23' },
         { name: 'sectlmiao.png', pushDate: '2025-08-23' }
       ];
       console.log('使用内置图片列表');
