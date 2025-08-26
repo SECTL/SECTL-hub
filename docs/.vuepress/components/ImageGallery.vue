@@ -443,6 +443,7 @@ const fetchImages = async () => {
         { name: '很精准的翻译.png', pushDate: '2025-08-26' },
         { name: '狐言乱语，秦王迷惑.png', pushDate: '2025-08-26' },
         { name: '幻想OS.png', pushDate: '2025-08-26' },
+        { name: '婚戒成就.png', pushDate: '2025-08-26' },
         { name: '开学后生命的转折点.png', pushDate: '2025-08-26' },
         { name: '黎泽懿滞销.png', pushDate: '2025-08-26' },
         { name: '龙尊本色.jpeg', pushDate: '2025-08-26' },
