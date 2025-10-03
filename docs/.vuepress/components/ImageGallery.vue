@@ -438,6 +438,7 @@ const fetchImages = async () => {
         { name: '大型🤖养殖场（雾）.png', pushDate: '2025-10-03' },
         { name: '大型嚼茶现场.png', pushDate: '2025-10-03' },
         { name: '等离子藏狐炮，砰！.png', pushDate: '2025-10-03' },
+        { name: '叠字大狮.png', pushDate: '2025-10-03' },
         { name: '东北粗口.png', pushDate: '2025-10-03' },
         { name: '东北方言.png', pushDate: '2025-10-03' },
         { name: '发情的输入法.png', pushDate: '2025-10-03' },
