@@ -476,6 +476,7 @@ const fetchImages = async () => {
         { name: '人机也懂，看来确实不是滋味.png', pushDate: '2025-10-06' },
         { name: '人与bot大型互殴现场.png', pushDate: '2025-10-06' },
         { name: '入典.png', pushDate: '2025-10-06' },
+        { name: '赛博灯泡.png', pushDate: '2025-10-06' },
         { name: '身体暖暖的东西.png', pushDate: '2025-10-06' },
         { name: '双重妈比.png', pushDate: '2025-10-06' },
         { name: '思 想 风 暴.png', pushDate: '2025-10-06' },
