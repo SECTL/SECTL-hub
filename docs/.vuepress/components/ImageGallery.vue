@@ -472,6 +472,7 @@ const fetchImages = async () => {
         { name: '群主认证的男娘.png', pushDate: '2025-10-06' },
         { name: '群主说话显得自己很憨.png', pushDate: '2025-10-06' },
         { name: '让我回哪里去？？.png', pushDate: '2025-10-06' },
+        { name: '人机也懂，看来确实不是滋味_14.png', pushDate: '2025-10-06' },
         { name: '人机也懂，看来确实不是滋味.png', pushDate: '2025-10-06' },
         { name: '人与bot大型互殴现场.png', pushDate: '2025-10-06' },
         { name: '入典.png', pushDate: '2025-10-06' },
