@@ -508,6 +508,7 @@ const fetchImages = async () => {
         { name: 'Grok-SECTL纯享版.png', pushDate: '2025-10-11' },
         { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-10-11' },
         { name: 'pH>12.png', pushDate: '2025-10-11' },
+        { name: 'SECTL官方白骨精.png', pushDate: '2025-10-11' },
         { name: 'SECTL官方认证的白骨精.png', pushDate: '2025-10-11' },
         { name: 'sectlmiao.png', pushDate: '2025-10-11' },
         { name: 'Super黎泽懿.png', pushDate: '2025-10-11' }
