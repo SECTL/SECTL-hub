@@ -463,6 +463,7 @@ const fetchImages = async () => {
         { name: '黎大夫妙手回春啊.png', pushDate: '2025-10-25' },
         { name: '黎泽懿：你来~.png', pushDate: '2025-10-25' },
         { name: '黎泽懿：卫生巾这梗过不去了是吧.png', pushDate: '2025-10-25' },
+        { name: '黎泽懿不行啊，怎么冷却时间这么长啊~~.png', pushDate: '2025-10-25' },
         { name: '黎泽懿滞销.png', pushDate: '2025-10-25' },
         { name: '龙尊本色.jpeg', pushDate: '2025-10-25' },
         { name: '冒烟的撤回键.png', pushDate: '2025-10-25' },
