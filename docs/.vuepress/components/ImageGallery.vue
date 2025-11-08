@@ -517,6 +517,7 @@ const fetchImages = async () => {
         { name: '珍贵回忆.png', pushDate: '2025-11-08' },
         { name: '只有精没有华消息.png', pushDate: '2025-11-08' },
         { name: '作业滞销，帮帮黎泽懿.png', pushDate: '2025-11-08' },
+        { name: 'CJT的第一次......全身照.png', pushDate: '2025-11-08' },
         { name: 'Deepthinking.png', pushDate: '2025-11-08' },
         { name: 'Follow me！龙娘姐↓姐↑~~~.png', pushDate: '2025-11-08' },
         { name: 'Grok-SECTL纯享版.png', pushDate: '2025-11-08' },
