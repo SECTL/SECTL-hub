@@ -521,6 +521,7 @@ const fetchImages = async () => {
         { name: 'Follow me！龙娘姐↓姐↑~~~.png', pushDate: '2025-11-08' },
         { name: 'Grok-SECTL纯享版.png', pushDate: '2025-11-08' },
         { name: 'i 何懿味.png', pushDate: '2025-11-08' },
+        { name: 'learn dam.png', pushDate: '2025-11-08' },
         { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-11-08' },
         { name: 'pH>12.png', pushDate: '2025-11-08' },
         { name: 'SECTL官方白骨精.png', pushDate: '2025-11-08' },
