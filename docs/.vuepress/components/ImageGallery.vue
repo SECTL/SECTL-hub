@@ -511,6 +511,7 @@ const fetchImages = async () => {
         { name: '粤韵风华.png', pushDate: '2025-11-08' },
         { name: '杂交龙娘，香香软软.png', pushDate: '2025-11-08' },
         { name: '再盒就是盒装饮料了.png', pushDate: '2025-11-08' },
+        { name: '在某中学就读的初三生.png', pushDate: '2025-11-08' },
         { name: '长易句.png', pushDate: '2025-11-08' },
         { name: '这事说不准.png', pushDate: '2025-11-08' },
         { name: '珍贵回忆.png', pushDate: '2025-11-08' },
@@ -525,6 +526,7 @@ const fetchImages = async () => {
         { name: 'SECTL官方白骨精.png', pushDate: '2025-11-08' },
         { name: 'SECTL官方认证的白骨精.png', pushDate: '2025-11-08' },
         { name: 'sectlmiao.png', pushDate: '2025-11-08' },
+        { name: 'Star保卫战.png', pushDate: '2025-11-08' },
         { name: 'Super黎泽懿.png', pushDate: '2025-11-08' }
       ];
       console.log('使用内置图片列表');
