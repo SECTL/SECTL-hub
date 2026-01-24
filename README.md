@@ -2,8 +2,6 @@
 
 SECTL 交流群图片展示网站 - 基于 VuePress 和 Vue-Theme-Hope 框架搭建
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/e66e4aeb-7aea-4a66-8abf-f67995967582/deploy-status)](https://app.netlify.com/projects/sectl-hub/deploys)
-
 ## 添加图片
 
 1. 将图片放入 `docs/.vuepress/public/images/` 文件夹
