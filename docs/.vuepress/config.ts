@@ -8,7 +8,7 @@ export default defineUserConfig({
   lang: "zh-CN",
   title: "SECTL-hub",
   head: [
-    ['link', { rel: 'icon', href: '/docs/.vuepress/logo.png' }]
+    ['link', { rel: 'icon', href: '/SECTL_logo.svg' }]
   ],
   
   // 打包工具配置
@@ -18,7 +18,7 @@ export default defineUserConfig({
   theme: hopeTheme({
     hostname: "https://sectl-hub.netlify.app",
     author: "SECTL",
-    logo: '/docs/.vuepress/logo.png',
+    logo: '/SECTL_logo.svg',
     
     // 导航栏配置
     navbar: [
