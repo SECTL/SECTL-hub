@@ -1,8 +1,58 @@
 const fs = require('fs');
 const path = require('path');
+const { execFileSync } = require('child_process');
 
 const IMAGES_DIR = path.join(__dirname, '..', 'docs', '.vuepress', 'public', 'images');
 const IMAGE_GALLERY_PATH = path.join(__dirname, '..', 'docs', '.vuepress', 'components', 'ImageGallery.vue');
+
+function formatShanghaiDate(date) {
+  return date.toLocaleDateString('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).replace(/\//g, '-');
+}
+
+function getGitFileCreatedDate(relativePath) {
+  try {
+    const output = execFileSync(
+      'git',
+      ['log', '--diff-filter=A', '--follow', '--format=%aI', '--', relativePath],
+      {
+        cwd: path.join(__dirname, '..'),
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore']
+      }
+    ).trim();
+
+    if (!output) return null;
+
+    const lines = output.split(/\r?\n/).filter(Boolean);
+    const oldest = lines[lines.length - 1];
+    const date = new Date(oldest);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return date;
+  } catch {
+    return null;
+  }
+}
+
+function getImageCreatedDate(img) {
+  const repoRelativePath = path.posix.join('docs', '.vuepress', 'public', 'images', img);
+
+  const gitCreated = getGitFileCreatedDate(repoRelativePath);
+  if (gitCreated) return formatShanghaiDate(gitCreated);
+
+  try {
+    const stats = fs.statSync(path.join(IMAGES_DIR, img));
+    const date = stats.birthtime && stats.birthtime.getTime() ? stats.birthtime : stats.mtime;
+    return formatShanghaiDate(new Date(date));
+  } catch {
+    return formatShanghaiDate(new Date());
+  }
+}
 
 function getImageFiles() {
   try {
@@ -25,32 +75,17 @@ function updateImageGallery(images) {
   try {
     let content = fs.readFileSync(IMAGE_GALLERY_PATH, 'utf8');
     
-    // 为每张图片获取真实的文件修改时间，格式为 YYYY-MM-DD（中国时间）
     const imagesWithDates = images.map(img => {
-      const filePath = path.join(IMAGES_DIR, img);
       try {
-        const stats = fs.statSync(filePath);
-        const pushDate = new Date(stats.mtime).toLocaleDateString('zh-CN', {
-          timeZone: 'Asia/Shanghai',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).replace(/\//g, '-');
+        const pushDate = getImageCreatedDate(img);
         return { name: img, pushDate };
       } catch (error) {
-        console.warn(`无法获取 ${img} 的修改时间:`, error.message);
-        // 如果无法获取文件时间，使用当前日期作为后备
-        const today = new Date().toLocaleDateString('zh-CN', {
-          timeZone: 'Asia/Shanghai',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).replace(/\//g, '-');
-        return { name: img, pushDate: today };
+        console.warn(`无法获取 ${img} 的创建时间:`, error.message);
+        return { name: img, pushDate: formatShanghaiDate(new Date()) };
       }
     });
     
-    // 生成新的图片数组字符串，包含真实的修改时间
+    // 生成新的图片数组字符串，包含真实的创建时间
     const imageListStr = imagesWithDates.map(img => `        { name: '${img.name.replace(/'/g, "\\'")}', pushDate: '${img.pushDate}' }`).join(',\n');
     
     // 查找内置图片列表数组
