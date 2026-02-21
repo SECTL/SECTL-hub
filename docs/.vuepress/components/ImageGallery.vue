@@ -51,11 +51,15 @@
           <span class="info-item">
             <strong>{{ displayedImages.length }}</strong> 张已加载
           </span>
-          <button class="refresh-btn small" @click="reloadImages">🔄 刷新</button>
+          <button class="refresh-btn small" @click="reloadImages">刷 新</button>
         </div>
       </div>
       
-      <div class="masonry-container" ref="masonryContainer">
+      <div 
+        class="masonry-grid" 
+        ref="masonryContainer"
+        :style="{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }"
+      >
         <div 
           v-for="(column, columnIndex) in columns" 
           :key="columnIndex" 
@@ -139,10 +143,10 @@ const isLoading = ref(false);
 const columns = ref([]);
 
 const minColumnWidth = 260;
-const columnGap = 25;
-const maxColumnCount = 5;
-
-const getImageKey = (image) => typeof image === 'object' ? image.name : image;
+  const columnGap = 25;
+  const maxColumnCount = 8;
+  
+  const getImageKey = (image) => typeof image === 'object' ? image.name : image;
 
 // 格式化图片名称
 const formatImageName = (image) => {
@@ -189,13 +193,14 @@ const getAspectRatio = (image) => {
 
 const getContainerWidth = () => {
   const el = masonryContainer.value;
-  const width = el?.clientWidth || document.documentElement.clientWidth || window.innerWidth;
-  return width;
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth || 0;
+  const width = el?.clientWidth || viewportWidth;
+  return Math.min(width, viewportWidth);
 };
 
 const computeColumnCount = (containerWidth) => {
-  const width = Math.max(0, containerWidth || 0);
-  const viewportWidth = window.innerWidth || width;
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth || 0;
+  const width = Math.min(Math.max(0, containerWidth || 0), viewportWidth);
 
   if (viewportWidth < 640) return 1;
   let count = 1;
@@ -222,6 +227,11 @@ const distributeImagesToColumns = () => {
   const containerWidth = getContainerWidth();
   const nextColumnCount = computeColumnCount(containerWidth);
   columnCount.value = nextColumnCount;
+
+  // 同步 CSS 变量
+  if (masonryContainer.value) {
+    masonryContainer.value.style.setProperty('--masonry-columns', nextColumnCount);
+  }
 
   const nextColumns = Array.from({ length: nextColumnCount }, () => []);
   const columnHeights = Array.from({ length: nextColumnCount }, () => 0);
@@ -251,7 +261,9 @@ const distributeImagesToColumns = () => {
 // 获取图片URL
 const getImageUrl = (image) => {
   const filename = typeof image === 'object' ? image.name : image;
-  const encoded = encodeURIComponent(filename);
+  // 使用 encodeURI 替代 encodeURIComponent，以保留 () 等在路径中合法的字符
+  // 但对于 # 和 ? 仍需特殊处理（如果文件名包含它们的话，目前看没有）
+  const encoded = encodeURI(filename).replace(/#/g, '%23').replace(/\?/g, '%3F');
   return withBase(`/images/${encoded}`);
 };
 

@@ -44,7 +44,9 @@ export default defineUserConfig({
     // 插件配置
     plugins: {
       // 图片预览插件
-      photoSwipe: true,
+      photoSwipe: {
+        scrollToClose: false,
+      },
     },
   }),
   

@@ -114,29 +114,14 @@ html[data-theme="dark"] {
 // 瀑布流网格容器
 .masonry-grid {
   width: 100%;
-  max-width: 1800px;
+  max-width: 100%;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(var(--masonry-columns), 1fr);
+  // 列数由 JS 动态设置 style="grid-template-columns: ..."
+  // 默认 fallback 为 1 列
+  grid-template-columns: repeat(1, 1fr);
   gap: var(--masonry-gap);
   align-items: start;
-  
-  // 响应式列数
-  @media (min-width: 1600px) {
-    --masonry-columns: 5;
-  }
-  
-  @media (max-width: 1200px) {
-    --masonry-columns: 3;
-  }
-  
-  @media (max-width: 900px) {
-    --masonry-columns: 2;
-  }
-  
-  @media (max-width: 640px) {
-    --masonry-columns: 1;
-  }
 }
 
 // 图片卡片样式
@@ -501,95 +486,42 @@ html[data-theme="dark"] {
   -webkit-overflow-scrolling: touch;
 }
 
-// 首页全宽铺满
-body.home [vp-content],
-body.home #markdown-content,
-body.home .theme-hope-content,
-body.home main,
-body.home .masonry-gallery,
-body.home .masonry-container,
-body.home .page,
-body.home .theme-container,
-body.home .vp-page {
-  max-width: 100% !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  width: 100% !important;
-}
-
-// 兼容部分主题版本不挂 body.home 的情况
-.vp-doc,
-.vp-page,
-.theme-hope-content,
-[vp-content],
-#markdown-content {
-  max-width: 100% !important;
-  width: 100% !important;
-  padding: 0 !important;
-  margin: 0 !important;
+// 首页布局修复
+body.home {
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 body.home .sidebar {
   display: none !important;
 }
 
-body.home .theme-hope-content {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-body.home .page {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* 主页容器全宽修复 - 增强版 */
-body.home,
-body.home div,
-body.home main,
-body.home section,
-body.home article,
-body.home aside,
-body.home header,
-body.home footer {
-  width: 100% !important;
+// 强制首页所有父容器全宽，移除默认的最大宽度限制
+body.home .theme-container,
+body.home .page,
+body.home .vp-page,
+body.home .theme-hope-content,
+body.home .vp-doc,
+body.home [vp-content],
+body.home #markdown-content,
+body.home main {
   max-width: 100% !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  box-sizing: border-box;
-}
-
-/* 特别排除加载占位符 */
-.loading-placeholder,
-.loading-placeholder * {
-  all: unset !important;
-  display: revert !important;
-}
-
-.loading-placeholder {
-  display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  gap: 1rem !important;
-  padding: 1rem !important;
   width: 100% !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
-/* 加载占位符保持原有布局 */
-.loading-placeholder {
-  display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  gap: 1rem !important;
-  width: 100% !important;
-  padding: 1rem !important;
-  box-sizing: border-box;
+// 修复首页标题被导航栏遮挡的问题
+body.home .vp-page,
+body.home .page {
+  padding-top: var(--navbar-height, 3.75rem) !important;
 }
 
-.loading-placeholder > div {
-  width: 100% !important;
-  height: auto !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  display: block !important;
+// 确保内容不被覆盖
+body.home .theme-hope-content {
+  padding-top: 2rem !important;
 }
 
 // 打印样式
@@ -604,3 +536,5 @@ body.home footer {
     margin-bottom: var(--space-md);
   }
 }
+
+
