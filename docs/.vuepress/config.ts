@@ -8,7 +8,8 @@ export default defineUserConfig({
   lang: "zh-CN",
   title: "SECTL-hub",
   head: [
-    ['link', { rel: 'icon', href: '/SECTL_logo.svg' }]
+    ['link', { rel: 'icon', href: '/SECTL_logo.svg' }],
+    ['link', { rel: 'preload', href: '/SECTL_logo.svg', as: 'image', fetchpriority: 'high' }]
   ],
   
   // 打包工具配置

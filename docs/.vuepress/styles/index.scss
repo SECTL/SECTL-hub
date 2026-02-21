@@ -517,6 +517,18 @@ body.home .vp-page {
   width: 100% !important;
 }
 
+// 兼容部分主题版本不挂 body.home 的情况
+.vp-doc,
+.vp-page,
+.theme-hope-content,
+[vp-content],
+#markdown-content {
+  max-width: 100% !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 body.home .sidebar {
   display: none !important;
 }

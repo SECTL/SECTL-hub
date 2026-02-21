@@ -42,66 +42,67 @@
       </div>
     </div>
     
-    <!-- 图片统计信息 -->
-    <div v-else class="gallery-info">
-      <div class="info-card">
-        <span class="info-item">
-          <strong>{{ images.length }}</strong> 张图片
-        </span>
-        <span class="info-item">
-          <strong>{{ displayedImages.length }}</strong> 张已加载
-        </span>
-        <button class="refresh-btn small" @click="reloadImages">🔄 刷新</button>
+    <template v-else>
+      <div class="gallery-info">
+        <div class="info-card">
+          <span class="info-item">
+            <strong>{{ images.length }}</strong> 张图片
+          </span>
+          <span class="info-item">
+            <strong>{{ displayedImages.length }}</strong> 张已加载
+          </span>
+          <button class="refresh-btn small" @click="reloadImages">🔄 刷新</button>
+        </div>
       </div>
-    </div>
-    
-    <!-- 智能瀑布流布局 -->
-    <div v-else class="masonry-container" ref="masonryContainer">
-      <div 
-        v-for="(column, columnIndex) in columns" 
-        :key="columnIndex" 
-        class="masonry-column"
-        :style="{ width: `calc(${100 / columnCount}% - ${(columnCount - 1) * 12.5}px)` }"
-      >
+      
+      <div class="masonry-container" ref="masonryContainer">
         <div 
-          v-for="(image, index) in column" 
-          :key="image + '-' + index"
-          class="masonry-item"
-          :style="{ 
-            animationDelay: (index * 0.05) + 's', 
-            marginBottom: '16px'
-          }"
+          v-for="(column, columnIndex) in columns" 
+          :key="columnIndex" 
+          class="masonry-column"
         >
-          <div class="masonry-card">
-            <div class="card-image-container">
-              <img 
-                :src="getImageUrl(image)" 
-                :alt="image" 
-                class="card-image"
-                loading="lazy" 
-                @load="handleImageLoad($event, image)"
-                @error="handleImageError($event, image)"
-                :style="{ aspectRatio: getAspectRatio(image) }"
-              />
-              <div 
-                class="card-image-loading" 
-                v-if="!imageLoaded[(image.name || image)]"
-                :style="{ opacity: imageLoaded[(image.name || image)] ? 0 : 1 }"
-                style="transition: opacity 0.3s ease-out;"
-              ></div>
-            </div>
-            <div class="card-content">
-              <h3 class="card-title">{{ formatImageName(image.name || image) }}</h3>
-              <div class="card-meta">
-                <span class="type-badge">{{ getImageType(image.name || image) }}</span>
-                <span class="date-badge" v-if="image.pushDate">{{ formatDate(image.pushDate) }}</span>
-                <span class="index-badge">{{ getColumnImageIndex(columnIndex, index) + 1 }}/{{ images.length }}</span>
+          <div 
+            v-for="(item, index) in column" 
+            :key="(item.image.name || item.image) + '-' + index"
+            class="masonry-item"
+            :style="{ 
+              animationDelay: (index * 0.05) + 's', 
+              marginBottom: '16px'
+            }"
+          >
+            <div class="masonry-card">
+              <div class="card-image-container" :style="{ aspectRatio: getAspectRatio(item.image) }">
+                <img 
+                  :src="getImageUrl(item.image)" 
+                  :alt="formatImageName(item.image)"
+                  class="card-image"
+                  :loading="item.globalIndex < 6 ? 'eager' : 'lazy'"
+                  :fetchpriority="item.globalIndex < 2 ? 'high' : 'auto'"
+                  decoding="async"
+                  @load="handleImageLoad($event, item.image)"
+                  @error="handleImageError($event, item.image)"
+                />
+                <div 
+                  class="card-image-loading" 
+                  v-if="!imageLoaded[(item.image.name || item.image)]"
+                  :style="{ opacity: imageLoaded[(item.image.name || item.image)] ? 0 : 1 }"
+                  style="transition: opacity 0.3s ease-out;"
+                ></div>
+              </div>
+              <div class="card-content">
+                <h3 class="card-title">{{ formatImageName(item.image) }}</h3>
+                <div class="card-meta">
+                  <span class="type-badge">{{ getImageType(item.image) }}</span>
+                  <span class="date-badge" v-if="item.image.pushDate">{{ formatDate(item.image.pushDate) }}</span>
+                  <span class="index-badge">{{ item.globalIndex + 1 }}/{{ images.length }}</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      <div ref="loadMoreSentinel" class="load-more-sentinel"></div>
+    </template>
     
     <!-- 加载更多占位符 -->
     <div v-if="loadingMore" class="loading-more">
@@ -112,7 +113,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue';
+import { withBase } from '@vuepress/client';
 
 // 状态变量
 const loading = ref(true);
@@ -123,6 +125,10 @@ const failedImages = ref([]);
 const imageLoaded = ref({});
 const loadedCount = ref(0);
 const masonryContainer = ref(null);
+const loadMoreSentinel = ref(null);
+const preloadHrefs = new Set();
+const imageTimeouts = new Map();
+const imageRatios = ref({});
 
 // 瀑布流配置
 const columnCount = ref(4); 
@@ -133,12 +139,11 @@ const isLoading = ref(false);
 // 瀑布流列
 const columns = ref([]);
 
-// 响应式断点
-const breakpoints = {
-  mobile: 640,
-  tablet: 1024,
-  desktop: 1440
-};
+const minColumnWidth = 260;
+const columnGap = 25;
+const maxColumnCount = 5;
+
+const getImageKey = (image) => typeof image === 'object' ? image.name : image;
 
 // 格式化图片名称
 const formatImageName = (image) => {
@@ -173,79 +178,82 @@ const getSupportedFormats = () => {
 
 // 获取图片宽高比（用于瀑布流布局）
 const getAspectRatio = (image) => {
-  // 根据图片名称智能分配宽高比，确保布局均衡
-  const ratios = {
-    'portrait': '3/4',
-    'landscape': '4/3',
-    'square': '1/1',
-    'wide': '16/9',
-    'tall': '9/16'
-  };
-  
-  // 根据文件名特征分配比例
-  const filename = typeof image === 'object' ? image.name : image;
-  const name = filename.toLowerCase();
-  if (name.includes('long') || name.includes('wide')) return ratios.wide;
-  if (name.includes('tall') || name.includes('high')) return ratios.tall;
-  if (name.includes('square')) return ratios.square;
-  
-  // 随机分配但保持均衡
-  const hash = name.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-  const index = hash % 4;
-  return Object.values(ratios)[index];
+  const key = getImageKey(image);
+  const ratio = imageRatios.value[key];
+  if (typeof ratio === 'number' && ratio > 0) {
+    const minRatio = 0.75;
+    const maxRatio = 2.4;
+    return Math.min(maxRatio, Math.max(minRatio, ratio));
+  }
+  return 4 / 3;
 };
 
-// 计算响应式列数
-const calculateColumns = () => {
-  const width = window.innerWidth;
-  
-  if (width < breakpoints.mobile) {
-    columnCount.value = 2; // 移动端两列
-  } else if (width < breakpoints.tablet) {
-    columnCount.value = 3; // 平板三列
-  } else {
-    columnCount.value = 4; // 桌面及以上四列
+const getContainerWidth = () => {
+  const el = masonryContainer.value;
+  const width = el?.clientWidth || document.documentElement.clientWidth || window.innerWidth;
+  return width;
+};
+
+const computeColumnCount = (containerWidth) => {
+  const width = Math.max(0, containerWidth || 0);
+  const viewportWidth = window.innerWidth || width;
+
+  if (viewportWidth < 640) return 1;
+  let count = 1;
+
+  for (let next = 2; next <= maxColumnCount; next++) {
+    const required = next * minColumnWidth + (next - 1) * columnGap;
+    if (width >= required) count = next;
+    else break;
   }
-  
-  // 重新分配图片到列
-  distributeImagesToColumns();
+
+  return count;
+};
+
+const computeInitialVisibleCount = (columnsCount) => {
+  const viewportHeight = window.innerHeight || 800;
+  const estimatedItemHeight = 320;
+  const rows = Math.ceil((viewportHeight * 1.4) / estimatedItemHeight);
+  const count = rows * columnsCount;
+  return Math.max(12, Math.min(48, count));
 };
 
 // 将图片分配到各列
 const distributeImagesToColumns = () => {
-  // 初始化列
-  const newColumns = Array.from({ length: columnCount.value }, () => []);
-  
-  // 将已显示的图片分配到各列
-  displayedImages.value.forEach((image, index) => {
-    const columnIndex = index % columnCount.value;
-    newColumns[columnIndex].push(image);
-  });
-  
-  columns.value = newColumns;
-};
+  const containerWidth = getContainerWidth();
+  const nextColumnCount = computeColumnCount(containerWidth);
+  columnCount.value = nextColumnCount;
 
-// 获取列中图片的全局索引
-const getColumnImageIndex = (columnIndex, indexInColumn) => {
-  let globalIndex = 0;
-  for (let i = 0; i < columnIndex; i++) {
-    globalIndex += columns.value[i].length;
-  }
-  return globalIndex + indexInColumn;
+  const nextColumns = Array.from({ length: nextColumnCount }, () => []);
+  const columnHeights = Array.from({ length: nextColumnCount }, () => 0);
+  const colWidth = (containerWidth - columnGap * (nextColumnCount - 1)) / nextColumnCount;
+  const metaHeight = 78;
+
+  displayedImages.value.forEach((image, globalIndex) => {
+    const ratio = getAspectRatio(image);
+    const estimatedHeight = colWidth / ratio + metaHeight;
+
+    let targetIndex = 0;
+    let minHeight = columnHeights[0];
+    for (let i = 1; i < columnHeights.length; i++) {
+      if (columnHeights[i] < minHeight) {
+        minHeight = columnHeights[i];
+        targetIndex = i;
+      }
+    }
+
+    nextColumns[targetIndex].push({ image, globalIndex });
+    columnHeights[targetIndex] += estimatedHeight;
+  });
+
+  columns.value = nextColumns;
 };
 
 // 获取图片URL
 const getImageUrl = (image) => {
   const filename = typeof image === 'object' ? image.name : image;
   const encoded = encodeURIComponent(filename);
-  
-  // 使用完整路径，确保路径正确
-  const basePath = window.location.origin;
-  const fullUrl = `${basePath}/images/${encoded}`;
-  
-  // 调试信息
-  console.log(`🎯 生成图片URL: ${filename} -> ${fullUrl}`);
-  return `/images/${encoded}`; // 保持相对路径，但添加调试
+  return withBase(`/images/${encoded}`);
 };
 
 // 生成随机高度用于占位符
@@ -255,22 +263,36 @@ const getRandomHeight = (min, max) => {
 
 // 处理图片加载
 const handleImageLoad = (event, image) => {
-  const key = typeof image === 'object' ? image.name : image;
+  const key = getImageKey(image);
   imageLoaded.value[key] = true;
   loadedCount.value++;
-  console.log(`✅ 图片加载成功: ${key}`);
   
   // 确保加载动画在300ms后完全消失
   setTimeout(() => {
     imageLoaded.value[key] = true;
   }, 300);
+
+  const timeoutId = imageTimeouts.get(key);
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+    imageTimeouts.delete(key);
+  }
+
+  const el = event?.target;
+  const w = el?.naturalWidth;
+  const h = el?.naturalHeight;
+  if (typeof w === 'number' && typeof h === 'number' && w > 0 && h > 0) {
+    const ratio = w / h;
+    if (!imageRatios.value[key] || Math.abs(imageRatios.value[key] - ratio) > 0.01) {
+      imageRatios.value[key] = ratio;
+      distributeImagesToColumns();
+    }
+  }
 };
 
 // 处理图片加载错误
 const handleImageError = (event, image) => {
   const key = typeof image === 'object' ? image.name : image;
-  console.error(`❌ 图片加载失败: ${key}`);
-  console.error(`尝试的URL: ${event.target.src}`);
   
   // 记录失败的图片
   failedImages.value.push(key);
@@ -301,6 +323,12 @@ const handleImageError = (event, image) => {
     <div style="font-size: 0.7rem; color: #999; margin-top: 5px;">${key}</div>
   `;
   event.target.parentNode.appendChild(errorDiv);
+
+  const timeoutId = imageTimeouts.get(key);
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+    imageTimeouts.delete(key);
+  }
 };
 
 // 滚动加载更多
@@ -331,92 +359,79 @@ const loadMoreImages = async () => {
   // 将新图片添加到已显示图片列表的末尾
   displayedImages.value = [...displayedImages.value, ...newImages];
   
-  // 重新分配图片到各列
   distributeImagesToColumns();
   
   currentBatch.value++;
   isLoading.value = false;
   loadingMore.value = false;
+
+  schedule(() => preloadImages(newImages, 4));
+};
+
+const shouldEnablePreload = () => {
+  const connection = navigator?.connection;
+  if (connection?.saveData) return false;
+  const effectiveType = connection?.effectiveType;
+  if (effectiveType === 'slow-2g' || effectiveType === '2g') return false;
+  return true;
+};
+
+const addPreloadLink = (href) => {
+  if (preloadHrefs.has(href)) return;
+  preloadHrefs.add(href);
+
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'image';
+  link.href = href;
+  link.fetchPriority = 'high';
+  link.dataset.sectlPreload = 'true';
+  document.head.appendChild(link);
+};
+
+const preloadImages = (list, count) => {
+  if (!shouldEnablePreload()) return;
+
+  const targets = list.slice(0, count);
+  for (const image of targets) {
+    const href = getImageUrl(image);
+    addPreloadLink(href);
+    const img = new Image();
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.src = href;
+  }
+};
+
+const schedule = (cb) => {
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(cb, { timeout: 1500 });
+  } else {
+    setTimeout(cb, 250);
+  }
 };
  
 // 获取图片列表 - 动态加载
 const fetchImages = async () => {
   try {
     loading.value = true;
-    
-    // 调试信息
-    console.log('🔍 开始加载图片列表...');
-    
-    // 尝试多种方式获取图片列表
+
     let imageList = [];
     
-    // 方法1: 使用GitHub API获取图片列表和实际上传时间
-    if (imageList.length === 0) {
-      try {
-        const repo = 'SECTL/SECTL-hub';
-        const imagesPath = 'docs/.vuepress/public/images';
-        
-        // 获取目录内容
-        const contentsUrl = `https://api.github.com/repos/${repo}/contents/${imagesPath}`;
-        const response = await fetch(contentsUrl);
-        
-        if (response.ok) {
-          const files = await response.json();
-          const imageFiles = files.filter(file => 
-            file.type === 'file' && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(file.name)
-          );
-          
-          // 为每个图片获取提交历史以获取实际上传时间
-          const imagePromises = imageFiles.map(async (file) => {
-            try {
-              // 获取该文件的提交历史
-              const commitsUrl = `https://api.github.com/repos/${repo}/commits?path=${encodeURIComponent(imagesPath + '/' + file.name)}&per_page=1`;
-              const commitResponse = await fetch(commitsUrl);
-              
-              if (commitResponse.ok) {
-                const commits = await commitResponse.json();
-                if (commits.length > 0) {
-                  const commitDate = commits[0].commit.author.date;
-                  return {
-                    name: file.name,
-                    pushDate: new Date(commitDate).toLocaleDateString('zh-CN', {
-                      timeZone: 'Asia/Shanghai',
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit'
-                    }).replace(/\//g, '-')
-                  };
-                }
-              }
-            } catch (e) {
-              console.warn(`获取 ${file.name} 的提交历史失败:`, e);
-            }
-            
-            // 如果无法获取提交历史，使用文件的最后修改时间
-            return {
-              name: file.name,
-              pushDate: new Date(file.last_modified || Date.now()).toLocaleDateString('zh-CN', {
-                timeZone: 'Asia/Shanghai',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-              }).replace(/\//g, '-')
-            };
-          });
-          
-          imageList = await Promise.all(imagePromises);
-          console.log('✅ 从GitHub API加载图片列表和实际上传时间');
-        } else if (response.status === 404) {
-          console.log('⚠️ GitHub仓库或路径不存在，跳过API访问');
-        } else {
-          console.log(`⚠️ GitHub API访问受限 (${response.status})，使用内置列表`);
+    try {
+      const response = await fetch(withBase('/images/manifest.json'), { cache: 'force-cache' });
+      if (response.ok) {
+        const manifest = await response.json();
+        if (Array.isArray(manifest)) {
+          imageList = manifest.map((item) => {
+            if (typeof item === 'string') return { name: item };
+            if (item && typeof item === 'object' && item.name) return item;
+            return null;
+          }).filter(Boolean);
         }
-      } catch (e) {
-        console.log('⚠️ GitHub API访问失败，使用内置列表');
       }
-    }
-    
-    // 方法2: 使用内置图片列表作为后备
+    } catch (e) {}
+
     if (imageList.length === 0) {
       imageList = [
         { name: '（把藏狐绑起来）.png', pushDate: '2026-02-08' },
@@ -598,11 +613,7 @@ const fetchImages = async () => {
         { name: 'Super黎泽懿.png', pushDate: '2026-02-08' },
         { name: 'Xwei我喜欢你.png', pushDate: '2026-02-08' }
       ];
-      console.log('使用内置图片列表');
     }
-    
-    // 调试：打印所有找到的图片
-    console.log('📸 找到的图片:', imageList);
     
     // 排序图片（按名称）
     imageList.sort((a, b) => {
@@ -613,39 +624,40 @@ const fetchImages = async () => {
     
     images.value = imageList;
     
-    // 初始化第一批显示的图片
-    const initialImages = images.value.slice(0, batchSize);
-    // 使用展开运算符确保响应式更新
+    await nextTick();
+    const containerWidth = getContainerWidth();
+    const columnsCount = computeColumnCount(containerWidth);
+    columnCount.value = columnsCount;
+    const initialCount = computeInitialVisibleCount(columnsCount);
+    const initialImages = images.value.slice(0, initialCount);
     displayedImages.value = [...initialImages];
-    currentBatch.value = 1;
+    currentBatch.value = Math.ceil(initialCount / batchSize);
     
     // 初始化加载状态
-    images.value.forEach(image => {
-      const key = typeof image === 'object' ? image.name : image;
+    displayedImages.value.forEach(image => {
+      const key = getImageKey(image);
       imageLoaded.value[key] = false;
-      
-      // 添加5秒超时处理
-      setTimeout(() => {
-        if (imageLoaded.value[key] === false) {
-          console.warn(`⏰ 图片加载超时: ${key}`);
-          imageLoaded.value[key] = true; // 强制结束加载状态
-        }
-      }, 5000);
+
+      if (!imageTimeouts.has(key)) {
+        const timeoutId = setTimeout(() => {
+          if (imageLoaded.value[key] === false) {
+            imageLoaded.value[key] = true;
+          }
+          imageTimeouts.delete(key);
+        }, 8000);
+        imageTimeouts.set(key, timeoutId);
+      }
     });
     
-    // 计算初始列数
-calculateColumns();
-    
-    // 分配图片到各列
     distributeImagesToColumns();
-    
-    console.log(`✅ 成功加载 ${images.value.length} 张图片`);
+
+    schedule(() => preloadImages(displayedImages.value, 8));
     
   } catch (error) {
-    console.error('加载图片失败:', error);
     images.value = [];
   } finally {
     loading.value = false;
+    nextTick(() => setupLoadMore());
   }
 };
 
@@ -659,70 +671,75 @@ const reloadImages = async () => {
   await fetchImages();
 };
 
-// 处理图片发现事件
-const onImagesDiscovered = (newImages) => {
-  if (newImages && newImages.length > 0) {
-    console.log('🎉 发现新图片:', newImages.length, '张');
-    // 如果发现了新图片，重新加载
-    reloadImages();
-  }
-};
+let loadMoreObserver = null;
+let resizeObserver = null;
 
-// 开始扫描图片
-const startScan = () => {
-  const scanner = document.querySelector('.image-scanner');
-  if (scanner) {
-    scanner.scrollIntoView({ behavior: 'smooth' });
+const setupLoadMore = () => {
+  window.removeEventListener('scroll', handleScroll);
+  if (loadMoreObserver) {
+    loadMoreObserver.disconnect();
+    loadMoreObserver = null;
   }
-  
-  // 触发扫描
-  if (window.imageScanner) {
-    window.imageScanner.scanImages();
+
+  if ('IntersectionObserver' in window) {
+    loadMoreObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadMoreImages();
+      },
+      { rootMargin: '800px 0px' }
+    );
+
+    if (loadMoreSentinel.value) {
+      loadMoreObserver.observe(loadMoreSentinel.value);
+    }
+  } else {
+    window.addEventListener('scroll', handleScroll, { passive: true });
   }
 };
 
 // 组件生命周期
 onMounted(() => {
   fetchImages();
-  
-  // 监听滚动加载更多
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  
-  // 监听窗口大小变化
-  window.addEventListener('resize', calculateColumns);
-  
-  // 监听图片更新事件
-  document.addEventListener('imagesUpdated', (event) => {
-    console.log('🔄 收到图片更新事件:', event.detail);
-    reloadImages();
-  });
-  
-  // 注册全局API
-  window.imageGallery = {
-    reloadImages,
-    images: computed(() => images.value),
-    displayedImages: computed(() => displayedImages.value)
-  };
-  
-  // 清理函数
-  onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll);
-    window.removeEventListener('resize', calculateColumns);
-    document.removeEventListener('imagesUpdated', () => {});
-    if (window.imageGallery) {
-      delete window.imageGallery;
+
+  nextTick(() => {
+    setupLoadMore();
+    distributeImagesToColumns();
+
+    if ('ResizeObserver' in window && masonryContainer.value) {
+      resizeObserver = new ResizeObserver(() => distributeImagesToColumns());
+      resizeObserver.observe(masonryContainer.value);
+    } else {
+      window.addEventListener('resize', distributeImagesToColumns);
     }
   });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handleScroll);
+  window.removeEventListener('resize', distributeImagesToColumns);
+
+  if (loadMoreObserver) {
+    loadMoreObserver.disconnect();
+    loadMoreObserver = null;
+  }
+
+  if (resizeObserver) {
+    resizeObserver.disconnect();
+    resizeObserver = null;
+  }
+
+  for (const timeoutId of imageTimeouts.values()) clearTimeout(timeoutId);
+  imageTimeouts.clear();
 });
 </script>
 
 <style scoped>
 /* 主容器样式 */
 .masonry-gallery {
-  padding: 25px 15px; 
-  margin: 0 auto;
-  max-width: none; 
+  padding: 25px 25px; 
   width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
   display: grid;
 }
 
@@ -909,13 +926,15 @@ onMounted(() => {
 }
 
 .info-card {
-  background: #f8f9fa;
+  background: var(--color-bg-soft);
   padding: 20px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
 }
 
 .info-item {
@@ -927,11 +946,17 @@ onMounted(() => {
   width: 100%;
   display: flex;
   gap: 25px;
+  max-width: 100%;
+  margin: 0;
+  justify-content: flex-start;
+  align-items: flex-start;
 }
 
 .masonry-column {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .masonry-item {
@@ -939,6 +964,8 @@ onMounted(() => {
   animation: fadeInUp 0.6s ease-out forwards;
   opacity: 0;
   transform: translateY(20px);
+  content-visibility: auto;
+  contain-intrinsic-size: 320px 480px;
 }
 
 @keyframes fadeInUp {
@@ -949,29 +976,32 @@ onMounted(() => {
 }
 
 .masonry-card {
-  background: white;
+  background: var(--color-bg-card);
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  transition: all var(--duration-normal) var(--ease-out);
   cursor: pointer;
+  border: 1px solid var(--color-border-light);
 }
 
 .masonry-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--color-border-hover);
 }
 
 /* 图片容器 */
 .card-image-container {
   position: relative;
   overflow: hidden;
-  background: #f8f9fa;
+  background: var(--color-bg-soft);
+  max-height: 520px;
 }
 
 .card-image {
   width: 100%;
-  height: auto;
+  height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
   border-radius: 12px 12px 0 0;
@@ -987,7 +1017,7 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 25%, #f8f9fa 50%, #e9ecef 75%, #f8f9fa 100%);
+  background: linear-gradient(135deg, var(--color-bg-soft) 0%, var(--color-bg-mute) 25%, var(--color-bg-soft) 50%, var(--color-bg-mute) 75%, var(--color-bg-soft) 100%);
   background-size: 200% 200%;
   animation: loading 2s ease-in-out infinite;
   border-radius: 12px 12px 0 0;
@@ -1002,11 +1032,11 @@ onMounted(() => {
   content: '';
   width: 40px;
   height: 40px;
-  border: 3px solid #e9ecef;
-  border-top: 3px solid #007bff;
+  border: 3px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 @media (max-width: 640px) {
@@ -1044,7 +1074,7 @@ onMounted(() => {
   margin: 0 0 12px 0;
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: var(--color-text);
   line-height: 1.4;
   word-break: break-word;
 }
@@ -1062,12 +1092,12 @@ onMounted(() => {
   font-size: 0.65rem;
   padding: 2px 6px;
   border-radius: 10px;
-  background: #f8f9fa;
-  color: #495057;
+  background: var(--color-bg-mute);
+  color: var(--color-text-soft);
   font-weight: 600;
   letter-spacing: 0.2px;
   transition: all 0.2s ease;
-  border: 1px solid transparent;
+  border: 1px solid var(--color-border-light);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -1131,6 +1161,11 @@ onMounted(() => {
   gap: 12px;
   padding: 40px 20px;
   color: #666;
+}
+
+.load-more-sentinel {
+  width: 100%;
+  height: 1px;
 }
 
 .loading-spinner {
