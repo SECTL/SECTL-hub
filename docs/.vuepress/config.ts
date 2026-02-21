@@ -16,17 +16,16 @@ export default defineUserConfig({
   
   // 主题配置
   theme: hopeTheme({
-    hostname: "https://sectl-hub.netlify.app",
+    hostname: "https://hub.sectl.top",
     author: "SECTL",
     logo: '/SECTL_logo.svg',
     
     // 导航栏配置
     navbar: [
+      { text: "SECTL 官网", link: "https://sectl.top" },
       { text: "SECTL-hub 主页", link: "/" },
-      { text: "SECTL 交流群", link: "https://qm.qq.com/q/PCqYgev4Em" },
       { text: "SECTL-hub 仓库", link: "https://github.com/SECTL/SECTL-hub" },
-      { text: "SecRandom 官网", link: "https://secrandom.netlify.app" },
-      { text: "SecRandom 项目仓库", link: "https://github.com/SECTL/SecRandom" }
+      { text: "SECTL 组织群", link: "https://qm.qq.com/q/PCqYgev4Em" },
     ],
     
     // 侧边栏配置
