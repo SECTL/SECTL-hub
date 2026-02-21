@@ -133,7 +133,6 @@ const imageRatios = ref({});
 // 瀑布流配置
 const columnCount = ref(4); 
 const batchSize = 12; 
-const currentBatch = ref(0);
 const isLoading = ref(false);
 
 // 瀑布流列
@@ -333,39 +332,58 @@ const handleImageError = (event, image) => {
 
 // 滚动加载更多
 const handleScroll = () => {
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  const windowHeight = window.innerHeight;
-  const documentHeight = document.documentElement.scrollHeight;
-  
-  if (scrollTop + windowHeight >= documentHeight - 100) {
-    loadMoreImages();
-  }
+  if (isSentinelInLoadRange()) loadMoreImages();
+};
+
+const isSentinelInLoadRange = () => {
+  const sentinel = loadMoreSentinel.value;
+  if (!sentinel) return false;
+  const rect = sentinel.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+  return rect.top <= viewportHeight + 800;
 };
 
 // 加载下一批图片
 const loadMoreImages = async () => {
-  if (isLoading.value || currentBatch.value * batchSize >= images.value.length) return;
+  if (isLoading.value || displayedImages.value.length >= images.value.length) return;
   
   isLoading.value = true;
   loadingMore.value = true;
   
-  const startIndex = currentBatch.value * batchSize;
+  const startIndex = displayedImages.value.length;
   const endIndex = Math.min(startIndex + batchSize, images.value.length);
   const newImages = images.value.slice(startIndex, endIndex);
+
+  for (const image of newImages) {
+    const key = getImageKey(image);
+    if (imageLoaded.value[key] !== true) imageLoaded.value[key] = false;
+
+    if (!imageTimeouts.has(key)) {
+      const timeoutId = setTimeout(() => {
+        if (imageLoaded.value[key] === false) {
+          imageLoaded.value[key] = true;
+        }
+        imageTimeouts.delete(key);
+      }, 8000);
+      imageTimeouts.set(key, timeoutId);
+    }
+  }
   
   // 延迟加载以展示加载动画
-  await new Promise(resolve => setTimeout(resolve, 600));
+  await new Promise(resolve => setTimeout(resolve, 150));
   
   // 将新图片添加到已显示图片列表的末尾
   displayedImages.value = [...displayedImages.value, ...newImages];
   
   distributeImagesToColumns();
   
-  currentBatch.value++;
   isLoading.value = false;
   loadingMore.value = false;
 
   schedule(() => preloadImages(newImages, 4));
+
+  await nextTick();
+  if (isSentinelInLoadRange()) loadMoreImages();
 };
 
 const shouldEnablePreload = () => {
@@ -619,190 +637,190 @@ const fetchImages = async () => {
 
     if (imageList.length === 0) {
       imageList = [
-        { name: '（把藏狐绑起来）.png', pushDate: '2026-02-21' },
-        { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2026-02-21' },
-        { name: '《hub-push》.png', pushDate: '2026-02-21' },
-        { name: '114种🌞本新的方法-1.png', pushDate: '2026-02-21' },
-        { name: '114种🌞本新的方法-2.png', pushDate: '2026-02-21' },
-        { name: '爱什么？我们一个群男生啊.png', pushDate: '2026-02-21' },
-        { name: '傲娇藏狐哈气了.jpg', pushDate: '2026-02-21' },
-        { name: '傲娇猫猫哈气了.png', pushDate: '2026-02-21' },
-        { name: '傲娇起来了.jpg', pushDate: '2026-02-21' },
-        { name: '被爱到力竭的藏狐驾鹤西去了.png', pushDate: '2026-02-21' },
-        { name: '被逼疯的生物.png', pushDate: '2026-02-21' },
-        { name: '被威胁了就眨眼.png', pushDate: '2026-02-21' },
-        { name: '被Pro价钱惊呆的丙烯.jpg', pushDate: '2026-02-21' },
-        { name: '本群认证猫娘cjt，严禁模仿.jpg', pushDate: '2026-02-21' },
-        { name: '本新：我还活着.png', pushDate: '2026-02-21' },
-        { name: '本新：要不我给实例装个桌面环境.jpg', pushDate: '2026-02-21' },
-        { name: '本新的出场动作真帅.png', pushDate: '2026-02-21' },
-        { name: '本新对刘将军史诗巨作的评价.png', pushDate: '2026-02-21' },
-        { name: '本新名言.png', pushDate: '2026-02-21' },
-        { name: '本新是人机？！.png', pushDate: '2026-02-21' },
-        { name: '病娇本新.png', pushDate: '2026-02-21' },
-        { name: '病娇三连.jpg', pushDate: '2026-02-21' },
-        { name: '不知道谁写的史山.png', pushDate: '2026-02-21' },
-        { name: '藏狐：跟我家抢生意？.png', pushDate: '2026-02-21' },
-        { name: '藏狐：我踏马，作业起爆！！.png', pushDate: '2026-02-21' },
-        { name: '藏狐：吱吱.png', pushDate: '2026-02-21' },
-        { name: '藏狐宝贵的第一次.png', pushDate: '2026-02-21' },
-        { name: '藏狐藏狐，我爱你，就像老鼠爱大米（）.png', pushDate: '2026-02-21' },
-        { name: '藏狐的挑担就是好用.png', pushDate: '2026-02-21' },
-        { name: '藏狐黑化ing.png', pushDate: '2026-02-21' },
-        { name: '藏狐叫了.png', pushDate: '2026-02-21' },
-        { name: '藏狐进山.png', pushDate: '2026-02-21' },
-        { name: '藏狐你是有什么心事吗.jpg', pushDate: '2026-02-21' },
-        { name: '藏狐自己养异世界の藏狐.png', pushDate: '2026-02-21' },
-        { name: '藏狐の白白嫩嫩的身体.png', pushDate: '2026-02-21' },
-        { name: '茶馆馆主带头喝茶.png', pushDate: '2026-02-21' },
-        { name: '打包大蛇.png', pushDate: '2026-02-21' },
-        { name: '打工人怒吼没钱.jpg', pushDate: '2026-02-21' },
-        { name: '大型🤖养殖场（雾）.png', pushDate: '2026-02-21' },
-        { name: '大型嚼茶现场.png', pushDate: '2026-02-21' },
-        { name: '倒反天罡，这机器人到底学到了什么奇怪东西.png', pushDate: '2026-02-21' },
-        { name: '地府苦力怕？.png', pushDate: '2026-02-21' },
-        { name: '等离子藏狐炮，砰！.png', pushDate: '2026-02-21' },
-        { name: '叠字大狮.png', pushDate: '2026-02-21' },
-        { name: '东北粗口.png', pushDate: '2026-02-21' },
-        { name: '东北方言.png', pushDate: '2026-02-21' },
-        { name: '都是文明人.jpg', pushDate: '2026-02-21' },
-        { name: '发情的输入法.png', pushDate: '2026-02-21' },
-        { name: '方言狐.png', pushDate: '2026-02-21' },
-        { name: '干净利索，不拖泥带水.png', pushDate: '2026-02-21' },
-        { name: '淦亖你啊.png', pushDate: '2026-02-21' },
-        { name: '高端优雅的点名动画.png', pushDate: '2026-02-21' },
-        { name: '给藏狐调成啥了.jpg', pushDate: '2026-02-21' },
-        { name: '给虾哥点上.png', pushDate: '2026-02-21' },
-        { name: '官方吐槽.png', pushDate: '2026-02-21' },
-        { name: '官方玩梗，最为致命.png', pushDate: '2026-02-21' },
-        { name: '还有高手.png', pushDate: '2026-02-21' },
-        { name: '河里.jpg', pushDate: '2026-02-21' },
-        { name: '很好的问题.png', pushDate: '2026-02-21' },
-        { name: '很精准的翻译.png', pushDate: '2026-02-21' },
-        { name: '狐狸狐狸我爱你.png', pushDate: '2026-02-21' },
-        { name: '狐言狐语.jpg', pushDate: '2026-02-21' },
-        { name: '狐言乱语，秦王迷惑.png', pushDate: '2026-02-21' },
-        { name: '幻想OS.png', pushDate: '2026-02-21' },
-        { name: '婚戒成就.png', pushDate: '2026-02-21' },
-        { name: '机械飞升，但是得插电.png', pushDate: '2026-02-21' },
-        { name: '结合上下文，不难得出黎泽懿是（）控.png', pushDate: '2026-02-21' },
-        { name: '今年过年奖品真多，这只狐狸包邮吗.png', pushDate: '2026-02-21' },
-        { name: '惊现m开发者，竟让机器人做出这种事情....png', pushDate: '2026-02-21' },
-        { name: '开学后生命的转折点.png', pushDate: '2026-02-21' },
-        { name: '看得出来很爱了.png', pushDate: '2026-02-21' },
-        { name: '科技感分黎泽懿.png', pushDate: '2026-02-21' },
-        { name: '来自姜胤の赞赏.png', pushDate: '2026-02-21' },
-        { name: '牢黎的吐槽.jpg', pushDate: '2026-02-21' },
-        { name: '牢虾与黎泽懿的吉列豆蒸.png', pushDate: '2026-02-21' },
-        { name: '黎大夫妙手回春啊.png', pushDate: '2026-02-21' },
-        { name: '黎萌懿：我踏马一点也不好.jpg', pushDate: '2026-02-21' },
-        { name: '黎萌懿你别死了.jpg', pushDate: '2026-02-21' },
-        { name: '黎泽懿：你来~.png', pushDate: '2026-02-21' },
-        { name: '黎泽懿：卫生巾这梗过不去了是吧.png', pushDate: '2026-02-21' },
-        { name: '黎泽懿：医药费不支持报销.jpg', pushDate: '2026-02-21' },
-        { name: '黎泽懿不行啊，怎么冷却时间这么长啊~~.png', pushDate: '2026-02-21' },
-        { name: '黎泽懿是AI做的.png', pushDate: '2026-02-21' },
-        { name: '黎泽懿滞销.png', pushDate: '2026-02-21' },
-        { name: '龙尊本色.jpeg', pushDate: '2026-02-21' },
-        { name: '满足你的愿望.png', pushDate: '2026-02-21' },
-        { name: '冒烟的撤回键.png', pushDate: '2026-02-21' },
-        { name: '没有藏狐，满满的都是幸福.png', pushDate: '2026-02-21' },
-        { name: '没有什么插？！.png', pushDate: '2026-02-21' },
-        { name: '秒商店开仓老观众.png', pushDate: '2026-02-21' },
-        { name: '你管？.png', pushDate: '2026-02-21' },
-        { name: '你好，泽懿.jpg', pushDate: '2026-02-21' },
-        { name: '你好刘同学.png', pushDate: '2026-02-21' },
-        { name: '你妈比的！.png', pushDate: '2026-02-21' },
-        { name: '你想象中的黎泽懿何必是黎泽懿.png', pushDate: '2026-02-21' },
-        { name: '你知道教你这一段，我把笔甩出去多少次吗.png', pushDate: '2026-02-21' },
-        { name: '你指的不是Gay，对吧.png', pushDate: '2026-02-21' },
-        { name: '你最好在说gun，而不是别的东西...png', pushDate: '2026-02-21' },
-        { name: '偶然相遇.png', pushDate: '2026-02-21' },
-        { name: '勤俭持家の狐.jpg', pushDate: '2026-02-21' },
-        { name: '请读者自行想象此画面，SECTL不作任何指导.png', pushDate: '2026-02-21' },
-        { name: '请群友们注意卫生，勿效仿口臭XXS.png', pushDate: '2026-02-21' },
-        { name: '请输入文本.png', pushDate: '2026-02-21' },
-        { name: '群主很忙.png', pushDate: '2026-02-21' },
-        { name: '群主认证_70.png', pushDate: '2026-02-21' },
-        { name: '群主认证_85.png', pushDate: '2026-02-21' },
-        { name: '群主认证.png', pushDate: '2026-02-21' },
-        { name: '群主认证的男娘.png', pushDate: '2026-02-21' },
-        { name: '群主是一种性取向.png', pushDate: '2026-02-21' },
-        { name: '群主说话显得自己很憨.png', pushDate: '2026-02-21' },
-        { name: '群主最好玩.png', pushDate: '2026-02-21' },
-        { name: '让我回哪里去？？.png', pushDate: '2026-02-21' },
-        { name: '热知识：那玩意指雌二醇.png', pushDate: '2026-02-21' },
-        { name: '人机也懂，看来确实不是滋味_14.png', pushDate: '2026-02-21' },
-        { name: '人机也懂，看来确实不是滋味.png', pushDate: '2026-02-21' },
-        { name: '人与bot大型互殴现场.png', pushDate: '2026-02-21' },
-        { name: '如何跟领导混熟_76.png', pushDate: '2026-02-21' },
-        { name: '入典.png', pushDate: '2026-02-21' },
-        { name: '赛博灯泡.png', pushDate: '2026-02-21' },
-        { name: '烧纸ing.png', pushDate: '2026-02-21' },
-        { name: '设置班级.png', pushDate: '2026-02-21' },
-        { name: '身体暖暖的东西.png', pushDate: '2026-02-21' },
-        { name: '师父别说了.jpg', pushDate: '2026-02-21' },
-        { name: '双重妈比.png', pushDate: '2026-02-21' },
-        { name: '说明黎泽懿是….png', pushDate: '2026-02-21' },
-        { name: '思 想 风 暴.png', pushDate: '2026-02-21' },
-        { name: '体毛茂盛的龙娘.png', pushDate: '2026-02-21' },
-        { name: '童言无忌.png', pushDate: '2026-02-21' },
-        { name: '拖出去斩了.png', pushDate: '2026-02-21' },
-        { name: '我爱你.png', pushDate: '2026-02-21' },
-        { name: '我不管.png', pushDate: '2026-02-21' },
-        { name: '我后台软件应该不多吧.png', pushDate: '2026-02-21' },
-        { name: '我叫你一声你敢答应吗.png', pushDate: '2026-02-21' },
-        { name: '我这个级别的cjt有权利哈任何人.png', pushDate: '2026-02-21' },
-        { name: '吸藏狐.png', pushDate: '2026-02-21' },
-        { name: '喜欢被霸.png', pushDate: '2026-02-21' },
-        { name: '香香软软…….png', pushDate: '2026-02-21' },
-        { name: '香香软软吹弹可破的藏狐_85.png', pushDate: '2026-02-21' },
-        { name: '香香软软吹弹可破的藏狐.png', pushDate: '2026-02-21' },
-        { name: '香香软软群主.png', pushDate: '2026-02-21' },
-        { name: '小飞侠彼得·泽懿·潘.png', pushDate: '2026-02-21' },
-        { name: '小毛毛群主.png', pushDate: '2026-02-21' },
-        { name: '小小小小小藏狐.png', pushDate: '2026-02-21' },
-        { name: '嘘，小点声.png', pushDate: '2026-02-21' },
-        { name: '叶背影：请输入文本.png', pushDate: '2026-02-21' },
-        { name: '一世阴名.png', pushDate: '2026-02-21' },
-        { name: '已抄送藏狐本人，他拒绝了Gay.png', pushDate: '2026-02-21' },
-        { name: '意义美好的英文.png', pushDate: '2026-02-21' },
-        { name: '有盒同享.png', pushDate: '2026-02-21' },
-        { name: '又一个写代码疯了的.png', pushDate: '2026-02-21' },
-        { name: '粤韵风华.png', pushDate: '2026-02-21' },
-        { name: '杂交龙娘，香香软软.png', pushDate: '2026-02-21' },
-        { name: '再发情让你飞起来.png', pushDate: '2026-02-21' },
-        { name: '再盒就是盒装饮料了.png', pushDate: '2026-02-21' },
-        { name: '在某中学就读的初三生.png', pushDate: '2026-02-21' },
-        { name: '长易句.png', pushDate: '2026-02-21' },
-        { name: '招魂.png', pushDate: '2026-02-21' },
-        { name: '这个能播吗.png', pushDate: '2026-02-21' },
-        { name: '这话不兴说啊.jpg', pushDate: '2026-02-21' },
-        { name: '这事说不准.png', pushDate: '2026-02-21' },
-        { name: '这ai没救了.png', pushDate: '2026-02-21' },
-        { name: '珍贵回忆.png', pushDate: '2026-02-21' },
-        { name: '只有精没有华消息.png', pushDate: '2026-02-21' },
-        { name: '拽拽的黎泽懿.png', pushDate: '2026-02-21' },
-        { name: '作业滞销，帮帮黎泽懿.png', pushDate: '2026-02-21' },
-        { name: 'CJK女装😋.jpg', pushDate: '2026-02-21' },
-        { name: 'CJT的第一次......全身照.png', pushDate: '2026-02-21' },
-        { name: 'Deepthinking.png', pushDate: '2026-02-21' },
-        { name: 'Follow me！龙娘姐↓姐↑~~~.png', pushDate: '2026-02-21' },
-        { name: 'Fox直播.jpg', pushDate: '2026-02-21' },
-        { name: 'Grok-SECTL纯享版.png', pushDate: '2026-02-21' },
-        { name: 'i 何懿味.png', pushDate: '2026-02-21' },
-        { name: 'learn dam.png', pushDate: '2026-02-21' },
-        { name: 'Loading....cute藏狐.png', pushDate: '2026-02-21' },
-        { name: 'lrs2187第二次露出手手.jpg', pushDate: '2026-02-21' },
-        { name: 'lrs2187首次露手.jpg', pushDate: '2026-02-21' },
-        { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2026-02-21' },
-        { name: 'pH大于12.png', pushDate: '2026-02-21' },
-        { name: 'SECTL官方白骨精.png', pushDate: '2026-02-21' },
-        { name: 'SECTL官方认证的白骨精.png', pushDate: '2026-02-21' },
-        { name: 'sectlmiao.png', pushDate: '2026-02-21' },
-        { name: 'Star保卫战.png', pushDate: '2026-02-21' },
-        { name: 'Super黎泽懿.png', pushDate: '2026-02-21' },
-        { name: 'Xwei我喜欢你.png', pushDate: '2026-02-21' }
+        { name: '（把藏狐绑起来）.png', pushDate: '2025-08-16' },
+        { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-16' },
+        { name: '《hub-push》.png', pushDate: '2025-10-06' },
+        { name: '114种🌞本新的方法-1.png', pushDate: '2025-10-25' },
+        { name: '114种🌞本新的方法-2.png', pushDate: '2025-10-25' },
+        { name: '爱什么？我们一个群男生啊.png', pushDate: '2026-02-08' },
+        { name: '傲娇藏狐哈气了.jpg', pushDate: '2026-01-18' },
+        { name: '傲娇猫猫哈气了.png', pushDate: '2025-08-20' },
+        { name: '傲娇起来了.jpg', pushDate: '2026-02-01' },
+        { name: '被爱到力竭的藏狐驾鹤西去了.png', pushDate: '2026-02-08' },
+        { name: '被逼疯的生物.png', pushDate: '2025-08-26' },
+        { name: '被威胁了就眨眼.png', pushDate: '2025-08-17' },
+        { name: '被Pro价钱惊呆的丙烯.jpg', pushDate: '2026-02-01' },
+        { name: '本群认证猫娘cjt，严禁模仿.jpg', pushDate: '2026-02-01' },
+        { name: '本新：我还活着.png', pushDate: '2025-08-29' },
+        { name: '本新：要不我给实例装个桌面环境.jpg', pushDate: '2026-02-01' },
+        { name: '本新的出场动作真帅.png', pushDate: '2025-10-25' },
+        { name: '本新对刘将军史诗巨作的评价.png', pushDate: '2025-08-22' },
+        { name: '本新名言.png', pushDate: '2025-10-25' },
+        { name: '本新是人机？！.png', pushDate: '2025-08-20' },
+        { name: '病娇本新.png', pushDate: '2026-01-16' },
+        { name: '病娇三连.jpg', pushDate: '2026-02-01' },
+        { name: '不知道谁写的史山.png', pushDate: '2025-08-23' },
+        { name: '藏狐：跟我家抢生意？.png', pushDate: '2026-02-08' },
+        { name: '藏狐：我踏马，作业起爆！！.png', pushDate: '2025-10-03' },
+        { name: '藏狐：吱吱.png', pushDate: '2025-11-22' },
+        { name: '藏狐宝贵的第一次.png', pushDate: '2025-08-24' },
+        { name: '藏狐藏狐，我爱你，就像老鼠爱大米（）.png', pushDate: '2026-02-08' },
+        { name: '藏狐的挑担就是好用.png', pushDate: '2025-11-15' },
+        { name: '藏狐黑化ing.png', pushDate: '2025-08-16' },
+        { name: '藏狐叫了.png', pushDate: '2025-08-23' },
+        { name: '藏狐进山.png', pushDate: '2025-08-23' },
+        { name: '藏狐你是有什么心事吗.jpg', pushDate: '2026-02-01' },
+        { name: '藏狐自己养异世界の藏狐.png', pushDate: '2025-08-17' },
+        { name: '藏狐の白白嫩嫩的身体.png', pushDate: '2025-11-09' },
+        { name: '茶馆馆主带头喝茶.png', pushDate: '2025-08-18' },
+        { name: '打包大蛇.png', pushDate: '2026-01-11' },
+        { name: '打工人怒吼没钱.jpg', pushDate: '2026-02-01' },
+        { name: '大型🤖养殖场（雾）.png', pushDate: '2025-08-26' },
+        { name: '大型嚼茶现场.png', pushDate: '2025-08-18' },
+        { name: '倒反天罡，这机器人到底学到了什么奇怪东西.png', pushDate: '2025-10-04' },
+        { name: '地府苦力怕？.png', pushDate: '2026-02-08' },
+        { name: '等离子藏狐炮，砰！.png', pushDate: '2025-10-02' },
+        { name: '叠字大狮.png', pushDate: '2025-10-03' },
+        { name: '东北粗口.png', pushDate: '2025-08-16' },
+        { name: '东北方言.png', pushDate: '2025-08-17' },
+        { name: '都是文明人.jpg', pushDate: '2026-02-01' },
+        { name: '发情的输入法.png', pushDate: '2025-08-17' },
+        { name: '方言狐.png', pushDate: '2025-08-23' },
+        { name: '干净利索，不拖泥带水.png', pushDate: '2025-12-16' },
+        { name: '淦亖你啊.png', pushDate: '2025-08-16' },
+        { name: '高端优雅的点名动画.png', pushDate: '2025-08-22' },
+        { name: '给藏狐调成啥了.jpg', pushDate: '2026-02-01' },
+        { name: '给虾哥点上.png', pushDate: '2025-11-28' },
+        { name: '官方吐槽.png', pushDate: '2025-10-11' },
+        { name: '官方玩梗，最为致命.png', pushDate: '2026-02-08' },
+        { name: '还有高手.png', pushDate: '2026-02-08' },
+        { name: '河里.jpg', pushDate: '2026-02-01' },
+        { name: '很好的问题.png', pushDate: '2025-10-11' },
+        { name: '很精准的翻译.png', pushDate: '2025-08-20' },
+        { name: '狐狸狐狸我爱你.png', pushDate: '2026-02-08' },
+        { name: '狐言狐语.jpg', pushDate: '2026-02-01' },
+        { name: '狐言乱语，秦王迷惑.png', pushDate: '2025-08-17' },
+        { name: '幻想OS.png', pushDate: '2025-08-23' },
+        { name: '婚戒成就.png', pushDate: '2025-08-26' },
+        { name: '机械飞升，但是得插电.png', pushDate: '2025-10-05' },
+        { name: '结合上下文，不难得出黎泽懿是（）控.png', pushDate: '2025-11-09' },
+        { name: '今年过年奖品真多，这只狐狸包邮吗.png', pushDate: '2026-02-08' },
+        { name: '惊现m开发者，竟让机器人做出这种事情....png', pushDate: '2025-10-25' },
+        { name: '开学后生命的转折点.png', pushDate: '2025-08-18' },
+        { name: '看得出来很爱了.png', pushDate: '2026-02-08' },
+        { name: '科技感分黎泽懿.png', pushDate: '2026-02-08' },
+        { name: '来自姜胤の赞赏.png', pushDate: '2026-01-15' },
+        { name: '牢黎的吐槽.jpg', pushDate: '2026-02-01' },
+        { name: '牢虾与黎泽懿的吉列豆蒸.png', pushDate: '2025-11-25' },
+        { name: '黎大夫妙手回春啊.png', pushDate: '2025-10-25' },
+        { name: '黎萌懿：我踏马一点也不好.jpg', pushDate: '2026-02-18' },
+        { name: '黎萌懿你别死了.jpg', pushDate: '2026-02-18' },
+        { name: '黎泽懿：你来~.png', pushDate: '2025-10-07' },
+        { name: '黎泽懿：卫生巾这梗过不去了是吧.png', pushDate: '2025-10-04' },
+        { name: '黎泽懿：医药费不支持报销.jpg', pushDate: '2026-02-01' },
+        { name: '黎泽懿不行啊，怎么冷却时间这么长啊~~.png', pushDate: '2025-10-25' },
+        { name: '黎泽懿是AI做的.png', pushDate: '2025-11-08' },
+        { name: '黎泽懿滞销.png', pushDate: '2025-08-16' },
+        { name: '龙尊本色.jpeg', pushDate: '2025-08-16' },
+        { name: '满足你的愿望.png', pushDate: '2026-02-18' },
+        { name: '冒烟的撤回键.png', pushDate: '2025-08-26' },
+        { name: '没有藏狐，满满的都是幸福.png', pushDate: '2025-11-09' },
+        { name: '没有什么插？！.png', pushDate: '2025-08-29' },
+        { name: '秒商店开仓老观众.png', pushDate: '2025-08-19' },
+        { name: '你管？.png', pushDate: '2025-08-17' },
+        { name: '你好，泽懿.jpg', pushDate: '2026-02-01' },
+        { name: '你好刘同学.png', pushDate: '2025-08-22' },
+        { name: '你妈比的！.png', pushDate: '2025-08-16' },
+        { name: '你想象中的黎泽懿何必是黎泽懿.png', pushDate: '2025-08-23' },
+        { name: '你知道教你这一段，我把笔甩出去多少次吗.png', pushDate: '2025-11-26' },
+        { name: '你指的不是Gay，对吧.png', pushDate: '2026-02-08' },
+        { name: '你最好在说gun，而不是别的东西...png', pushDate: '2025-10-02' },
+        { name: '偶然相遇.png', pushDate: '2025-10-25' },
+        { name: '勤俭持家の狐.jpg', pushDate: '2026-02-01' },
+        { name: '请读者自行想象此画面，SECTL不作任何指导.png', pushDate: '2025-11-16' },
+        { name: '请群友们注意卫生，勿效仿口臭XXS.png', pushDate: '2025-09-14' },
+        { name: '请输入文本.png', pushDate: '2025-11-26' },
+        { name: '群主很忙.png', pushDate: '2025-10-03' },
+        { name: '群主认证_70.png', pushDate: '2025-08-24' },
+        { name: '群主认证_85.png', pushDate: '2025-08-24' },
+        { name: '群主认证.png', pushDate: '2025-08-24' },
+        { name: '群主认证的男娘.png', pushDate: '2025-08-24' },
+        { name: '群主是一种性取向.png', pushDate: '2026-02-08' },
+        { name: '群主说话显得自己很憨.png', pushDate: '2025-08-17' },
+        { name: '群主最好玩.png', pushDate: '2025-10-11' },
+        { name: '让我回哪里去？？.png', pushDate: '2025-08-17' },
+        { name: '热知识：那玩意指雌二醇.png', pushDate: '2026-02-08' },
+        { name: '人机也懂，看来确实不是滋味_14.png', pushDate: '2025-10-06' },
+        { name: '人机也懂，看来确实不是滋味.png', pushDate: '2025-10-06' },
+        { name: '人与bot大型互殴现场.png', pushDate: '2025-08-21' },
+        { name: '如何跟领导混熟_76.png', pushDate: '2025-10-18' },
+        { name: '入典.png', pushDate: '2025-08-16' },
+        { name: '赛博灯泡.png', pushDate: '2025-10-06' },
+        { name: '烧纸ing.png', pushDate: '2026-02-08' },
+        { name: '设置班级.png', pushDate: '2025-11-01' },
+        { name: '身体暖暖的东西.png', pushDate: '2025-08-23' },
+        { name: '师父别说了.jpg', pushDate: '2026-02-01' },
+        { name: '双重妈比.png', pushDate: '2025-08-16' },
+        { name: '说明黎泽懿是….png', pushDate: '2025-12-13' },
+        { name: '思 想 风 暴.png', pushDate: '2025-08-23' },
+        { name: '体毛茂盛的龙娘.png', pushDate: '2026-01-27' },
+        { name: '童言无忌.png', pushDate: '2025-08-29' },
+        { name: '拖出去斩了.png', pushDate: '2025-08-16' },
+        { name: '我爱你.png', pushDate: '2026-02-08' },
+        { name: '我不管.png', pushDate: '2025-08-16' },
+        { name: '我后台软件应该不多吧.png', pushDate: '2025-09-20' },
+        { name: '我叫你一声你敢答应吗.png', pushDate: '2025-11-26' },
+        { name: '我这个级别的cjt有权利哈任何人.png', pushDate: '2026-01-27' },
+        { name: '吸藏狐.png', pushDate: '2025-09-20' },
+        { name: '喜欢被霸.png', pushDate: '2025-08-17' },
+        { name: '香香软软…….png', pushDate: '2025-10-11' },
+        { name: '香香软软吹弹可破的藏狐_85.png', pushDate: '2025-08-23' },
+        { name: '香香软软吹弹可破的藏狐.png', pushDate: '2025-08-23' },
+        { name: '香香软软群主.png', pushDate: '2025-08-23' },
+        { name: '小飞侠彼得·泽懿·潘.png', pushDate: '2025-11-09' },
+        { name: '小毛毛群主.png', pushDate: '2025-08-23' },
+        { name: '小小小小小藏狐.png', pushDate: '2025-08-16' },
+        { name: '嘘，小点声.png', pushDate: '2026-02-08' },
+        { name: '叶背影：请输入文本.png', pushDate: '2026-02-18' },
+        { name: '一世阴名.png', pushDate: '2025-08-17' },
+        { name: '已抄送藏狐本人，他拒绝了Gay.png', pushDate: '2026-02-08' },
+        { name: '意义美好的英文.png', pushDate: '2025-08-23' },
+        { name: '有盒同享.png', pushDate: '2025-08-17' },
+        { name: '又一个写代码疯了的.png', pushDate: '2026-02-08' },
+        { name: '粤韵风华.png', pushDate: '2025-08-16' },
+        { name: '杂交龙娘，香香软软.png', pushDate: '2025-08-23' },
+        { name: '再发情让你飞起来.png', pushDate: '2026-02-08' },
+        { name: '再盒就是盒装饮料了.png', pushDate: '2025-08-21' },
+        { name: '在某中学就读的初三生.png', pushDate: '2025-11-08' },
+        { name: '长易句.png', pushDate: '2025-08-22' },
+        { name: '招魂.png', pushDate: '2026-02-08' },
+        { name: '这个能播吗.png', pushDate: '2026-02-08' },
+        { name: '这话不兴说啊.jpg', pushDate: '2026-02-01' },
+        { name: '这事说不准.png', pushDate: '2025-10-25' },
+        { name: '这ai没救了.png', pushDate: '2026-02-18' },
+        { name: '珍贵回忆.png', pushDate: '2025-08-16' },
+        { name: '只有精没有华消息.png', pushDate: '2025-08-18' },
+        { name: '拽拽的黎泽懿.png', pushDate: '2025-11-09' },
+        { name: '作业滞销，帮帮黎泽懿.png', pushDate: '2025-08-20' },
+        { name: 'CJK女装😋.jpg', pushDate: '2026-02-20' },
+        { name: 'CJT的第一次......全身照.png', pushDate: '2025-11-08' },
+        { name: 'Deepthinking.png', pushDate: '2025-08-16' },
+        { name: 'Follow me！龙娘姐↓姐↑~~~.png', pushDate: '2025-10-02' },
+        { name: 'Fox直播.jpg', pushDate: '2026-02-01' },
+        { name: 'Grok-SECTL纯享版.png', pushDate: '2025-08-18' },
+        { name: 'i 何懿味.png', pushDate: '2025-10-11' },
+        { name: 'learn dam.png', pushDate: '2025-11-08' },
+        { name: 'Loading....cute藏狐.png', pushDate: '2026-02-03' },
+        { name: 'lrs2187第二次露出手手.jpg', pushDate: '2026-02-03' },
+        { name: 'lrs2187首次露手.jpg', pushDate: '2026-02-03' },
+        { name: 'O-oooooooooo AAAAE-A-A-I-A-U- JO-oooooooooooo AAE-O-A-A-U-U-A- E-eee-ee-eee AAAAE-A-E-I-E-A- JO-ooo-oo-oo-oo EEEEO-A-AAA-AAAA.png', pushDate: '2025-08-17' },
+        { name: 'pH大于12.png', pushDate: '2025-08-23' },
+        { name: 'SECTL官方白骨精.png', pushDate: '2025-10-11' },
+        { name: 'SECTL官方认证的白骨精.png', pushDate: '2025-10-11' },
+        { name: 'sectlmiao.png', pushDate: '2025-08-20' },
+        { name: 'Star保卫战.png', pushDate: '2025-11-08' },
+        { name: 'Super黎泽懿.png', pushDate: '2025-10-02' },
+        { name: 'Xwei我喜欢你.png', pushDate: '2026-01-01' }
       ];
     }
     
@@ -822,7 +840,6 @@ const fetchImages = async () => {
     const initialCount = computeInitialVisibleCount(columnsCount);
     const initialImages = images.value.slice(0, initialCount);
     displayedImages.value = [...initialImages];
-    currentBatch.value = Math.ceil(initialCount / batchSize);
     
     // 初始化加载状态
     displayedImages.value.forEach(image => {
@@ -855,7 +872,6 @@ const fetchImages = async () => {
 // 重新加载图片列表
 const reloadImages = async () => {
   displayedImages.value = [];
-  currentBatch.value = 0;
   loadedCount.value = 0;
   imageLoaded.value = {};
   columns.value = [];
@@ -864,6 +880,7 @@ const reloadImages = async () => {
 
 let loadMoreObserver = null;
 let resizeObserver = null;
+let loadMoreInterval = null;
 
 const setupLoadMore = () => {
   window.removeEventListener('scroll', handleScroll);
@@ -883,9 +900,10 @@ const setupLoadMore = () => {
     if (loadMoreSentinel.value) {
       loadMoreObserver.observe(loadMoreSentinel.value);
     }
-  } else {
-    window.addEventListener('scroll', handleScroll, { passive: true });
   }
+
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  if (isSentinelInLoadRange()) loadMoreImages();
 };
 
 // 组件生命周期
@@ -902,12 +920,30 @@ onMounted(() => {
     } else {
       window.addEventListener('resize', distributeImagesToColumns);
     }
+
+    if (loadMoreInterval) {
+      clearInterval(loadMoreInterval);
+      loadMoreInterval = null;
+    }
+    loadMoreInterval = setInterval(() => {
+      if (!isLoading.value && displayedImages.value.length < images.value.length && isSentinelInLoadRange()) {
+        loadMoreImages();
+      }
+      if (displayedImages.value.length >= images.value.length) {
+        clearInterval(loadMoreInterval);
+        loadMoreInterval = null;
+      }
+    }, 500);
   });
 });
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
   window.removeEventListener('resize', distributeImagesToColumns);
+  if (loadMoreInterval) {
+    clearInterval(loadMoreInterval);
+    loadMoreInterval = null;
+  }
 
   if (loadMoreObserver) {
     loadMoreObserver.disconnect();
@@ -927,7 +963,7 @@ onUnmounted(() => {
 <style scoped>
 /* 主容器样式 */
 .masonry-gallery {
-  padding: 25px 25px; 
+  padding: 40px 40px; 
   width: 100%;
   max-width: 100%;
   margin: 0 auto;

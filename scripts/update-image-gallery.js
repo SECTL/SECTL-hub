@@ -88,32 +88,33 @@ function updateImageGallery(images) {
     // 生成新的图片数组字符串，包含真实的创建时间
     const imageListStr = imagesWithDates.map(img => `        { name: '${img.name.replace(/'/g, "\\'")}', pushDate: '${img.pushDate}' }`).join(',\n');
     
-    // 查找内置图片列表数组
-    // 查找 "方法2: 使用内置图片列表作为后备" 注释后的数组定义
-    const method2Pattern = /(\/\/ 方法2: 使用内置图片列表作为后备[\s\S]*?imageList = \[)([\s\S]*?)(\s+\];)/;
-    
     let newContent = content;
-    let updated = false;
-    
-    const match = content.match(method2Pattern);
-    if (match) {
-      newContent = content.replace(method2Pattern, `$1\n${imageListStr}\n      ];`);
-      updated = true;
-    } else {
-      // 备用方案：查找任何包含图片数组的地方
+
+    const defaultListPattern = /(let\s+imageList\s*=\s*\[)([\s\S]*?)(\n\s*\];)/;
+    const fallbackListPattern = /(if\s*\(\s*imageList\.length\s*===\s*0\s*\)\s*\{\s*\n\s*imageList\s*=\s*\[)([\s\S]*?)(\n\s*\];)/;
+
+    let updatedCount = 0;
+
+    if (defaultListPattern.test(newContent)) {
+      newContent = newContent.replace(defaultListPattern, `$1\n${imageListStr}$3`);
+      updatedCount += 1;
+    }
+
+    if (fallbackListPattern.test(newContent)) {
+      newContent = newContent.replace(fallbackListPattern, `$1\n${imageListStr}$3`);
+      updatedCount += 1;
+    }
+
+    if (updatedCount === 0) {
       console.log('尝试备用方案...');
-      
-      // 查找包含图片名称的数组（支持对象格式）
       const imageArrayPattern = /imageList = \[([\s\S]*?)\];/;
-      const imageMatch = content.match(imageArrayPattern);
-      
-      if (imageMatch) {
-        newContent = content.replace(imageArrayPattern, `imageList = [\n${imageListStr}\n      ];`);
-        updated = true;
+      if (imageArrayPattern.test(newContent)) {
+        newContent = newContent.replace(imageArrayPattern, `imageList = [\n${imageListStr}\n      ];`);
+        updatedCount += 1;
       }
     }
     
-    if (updated) {
+    if (updatedCount > 0) {
       fs.writeFileSync(IMAGE_GALLERY_PATH, newContent, 'utf8');
       console.log('✅ 图片画廊已成功更新');
       return true;
