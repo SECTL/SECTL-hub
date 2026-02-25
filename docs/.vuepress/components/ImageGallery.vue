@@ -633,6 +633,7 @@ const fetchImages = async () => {
         { name: 'sectlmiao.png', pushDate: '2025-08-20' },
         { name: 'Star保卫战.png', pushDate: '2025-11-08' },
         { name: 'Super黎泽懿.png', pushDate: '2025-10-02' },
+        { name: 'xwei 是谁🥵不认识.jpg', pushDate: '2026-02-25' },
         { name: 'Xwei我喜欢你.png', pushDate: '2026-01-01' }
       ];
     
@@ -838,6 +839,7 @@ const fetchImages = async () => {
         { name: 'sectlmiao.png', pushDate: '2025-08-20' },
         { name: 'Star保卫战.png', pushDate: '2025-11-08' },
         { name: 'Super黎泽懿.png', pushDate: '2025-10-02' },
+        { name: 'xwei 是谁🥵不认识.jpg', pushDate: '2026-02-25' },
         { name: 'Xwei我喜欢你.png', pushDate: '2026-01-01' }
       ];
     }
