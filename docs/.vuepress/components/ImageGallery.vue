@@ -447,6 +447,7 @@ const fetchImages = async () => {
     loading.value = true;
 
     let imageList = [
+        { name: '“雪野狐的腿腿”.jpg', pushDate: '2026-04-16' },
         { name: '（把藏狐绑起来）.png', pushDate: '2025-08-16' },
         { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-16' },
         { name: '《恩情还不完》.jpg', pushDate: '2026-03-15' },
@@ -630,6 +631,7 @@ const fetchImages = async () => {
         { name: '永远怀念黎泽懿.png', pushDate: '2026-03-01' },
         { name: '有盒同享.png', pushDate: '2025-08-17' },
         { name: '又一个写代码疯了的.png', pushDate: '2026-02-08' },
+        { name: '欲拒还迎，你情我愿，打情骂俏.png', pushDate: '2026-04-16' },
         { name: '粤韵风华.png', pushDate: '2025-08-16' },
         { name: '杂交龙娘，香香软软.png', pushDate: '2025-08-23' },
         { name: '再发情让你飞起来.png', pushDate: '2026-02-08' },
@@ -643,6 +645,7 @@ const fetchImages = async () => {
         { name: '这ai没救了.png', pushDate: '2026-02-18' },
         { name: '珍贵回忆.png', pushDate: '2025-08-16' },
         { name: '震撼首发：QQ根据黎泽懿的照片生成的QQ秀.png', pushDate: '2026-03-01' },
+        { name: '震惊，叶背影强抢有妇之男.png', pushDate: '2026-04-16' },
         { name: '只有精没有华消息.png', pushDate: '2025-08-18' },
         { name: '拽拽的黎泽懿.png', pushDate: '2025-11-09' },
         { name: '作业滞销，帮帮黎泽懿.png', pushDate: '2025-08-20' },
@@ -685,6 +688,7 @@ const fetchImages = async () => {
 
     if (imageList.length === 0) {
       imageList = [
+        { name: '“雪野狐的腿腿”.jpg', pushDate: '2026-04-16' },
         { name: '（把藏狐绑起来）.png', pushDate: '2025-08-16' },
         { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-16' },
         { name: '《恩情还不完》.jpg', pushDate: '2026-03-15' },
@@ -868,6 +872,7 @@ const fetchImages = async () => {
         { name: '永远怀念黎泽懿.png', pushDate: '2026-03-01' },
         { name: '有盒同享.png', pushDate: '2025-08-17' },
         { name: '又一个写代码疯了的.png', pushDate: '2026-02-08' },
+        { name: '欲拒还迎，你情我愿，打情骂俏.png', pushDate: '2026-04-16' },
         { name: '粤韵风华.png', pushDate: '2025-08-16' },
         { name: '杂交龙娘，香香软软.png', pushDate: '2025-08-23' },
         { name: '再发情让你飞起来.png', pushDate: '2026-02-08' },
@@ -881,6 +886,7 @@ const fetchImages = async () => {
         { name: '这ai没救了.png', pushDate: '2026-02-18' },
         { name: '珍贵回忆.png', pushDate: '2025-08-16' },
         { name: '震撼首发：QQ根据黎泽懿的照片生成的QQ秀.png', pushDate: '2026-03-01' },
+        { name: '震惊，叶背影强抢有妇之男.png', pushDate: '2026-04-16' },
         { name: '只有精没有华消息.png', pushDate: '2025-08-18' },
         { name: '拽拽的黎泽懿.png', pushDate: '2025-11-09' },
         { name: '作业滞销，帮帮黎泽懿.png', pushDate: '2025-08-20' },
