@@ -448,6 +448,7 @@ const fetchImages = async () => {
 
     let imageList = [
         { name: '“雪野狐的腿腿”.jpg', pushDate: '2026-04-16' },
+        { name: '“Busy Baise の 腿腿”.jpg', pushDate: '2026-04-17' },
         { name: '（把藏狐绑起来）.png', pushDate: '2025-08-16' },
         { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-16' },
         { name: '《恩情还不完》.jpg', pushDate: '2026-03-15' },
@@ -456,6 +457,7 @@ const fetchImages = async () => {
         { name: '《你个SecBoard》.png', pushDate: '2026-03-06' },
         { name: '《我 就 是 你 哥》.png', pushDate: '2026-03-16' },
         { name: '《硝苯氮》.png', pushDate: '2026-03-16' },
+        { name: '《ci,jy 和secNickel》.jpg', pushDate: '2026-04-17' },
         { name: '《hub-push》.png', pushDate: '2025-10-06' },
         { name: '《sectl的构成》.png', pushDate: '2026-02-28' },
         { name: '114种🌞本新的方法-1.png', pushDate: '2025-10-25' },
@@ -689,6 +691,7 @@ const fetchImages = async () => {
     if (imageList.length === 0) {
       imageList = [
         { name: '“雪野狐的腿腿”.jpg', pushDate: '2026-04-16' },
+        { name: '“Busy Baise の 腿腿”.jpg', pushDate: '2026-04-17' },
         { name: '（把藏狐绑起来）.png', pushDate: '2025-08-16' },
         { name: '(拿出绳子,一把捆住藏狐).png', pushDate: '2025-08-16' },
         { name: '《恩情还不完》.jpg', pushDate: '2026-03-15' },
@@ -697,6 +700,7 @@ const fetchImages = async () => {
         { name: '《你个SecBoard》.png', pushDate: '2026-03-06' },
         { name: '《我 就 是 你 哥》.png', pushDate: '2026-03-16' },
         { name: '《硝苯氮》.png', pushDate: '2026-03-16' },
+        { name: '《ci,jy 和secNickel》.jpg', pushDate: '2026-04-17' },
         { name: '《hub-push》.png', pushDate: '2025-10-06' },
         { name: '《sectl的构成》.png', pushDate: '2026-02-28' },
         { name: '114种🌞本新的方法-1.png', pushDate: '2025-10-25' },
