@@ -8,8 +8,8 @@ export default defineUserConfig({
   lang: "zh-CN",
   title: "SECTL-hub",
   head: [
-    ['link', { rel: 'icon', href: '/SECTL_logo.svg' }],
-    ['link', { rel: 'preload', href: '/SECTL_logo.svg', as: 'image', fetchpriority: 'high' }]
+    ['link', { rel: 'icon', href: 'https://sectl.cn/SECTL-LOGO.svg' }],
+    ['link', { rel: 'preload', href: 'https://sectl.cn/SECTL-LOGO.svg', as: 'image', fetchpriority: 'high' }]
   ],
   
   // 打包工具配置
@@ -19,7 +19,7 @@ export default defineUserConfig({
   theme: hopeTheme({
     hostname: "https://hub.sectl.top",
     author: "SECTL",
-    logo: '/SECTL_logo.svg',
+    logo: 'https://sectl.cn/SECTL-LOGO.svg',
     
     // 导航栏配置
     navbar: [
